@@ -7,4 +7,4 @@
 
 * SONY PaSoRi RC-S310,RC-S320, RC-S330 (RC-S360, RC-S370): [libpafe](https://github.com/rfujita/libpafe)+libusbで対応
 * SONY PaSoRi [RC-S380](https://www.sony.co.jp/Products/felica/consumer/support/faq/detail/253.html): [libusb](https://github.com/libusb/libusb)で対応
-* SONY PaSoRi RC-S300 11月11日発売予定: CryptoTokenKitで対応予定
+* SONY PaSoRi RC-S300 11月11日発売予定: TKSmartCardSlotManagerで対応予定
