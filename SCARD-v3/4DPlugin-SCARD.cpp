@@ -365,7 +365,11 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
         errorMessage = "TKSmartCardSlotManager::defaultManager() failed";
     }
 #else
-     
+     /*
+      
+      windows
+      
+      */
 #endif
     
 #if VERSIONMAC
@@ -390,14 +394,7 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                     char *end;
                     int vid = (int)strtol(_vid.c_str(), &end, 16);
                     int pid = (int)strtol(_pid.c_str(), &end, 16);
-                                                            
-                    bool is_Sony_RC_S310 = ((vid == 0x054C) && (pid == 0x006C));
-                    bool is_Sony_RC_S320 = ((vid == 0x054C) && (pid == 0x01BB));
-                    bool is_Sony_RC_S330 = ((vid == 0x054C) && (pid == 0x02E1));
-                    bool is_Sony_RC_S380 = ((vid == 0x054C) && (pid == 0x06C3));
-                    
-                    bool is_PaSoRi = is_Sony_RC_S310|is_Sony_RC_S320|is_Sony_RC_S330;
-                    
+                    int libusb_device_id = 0;
                     /*
                      Sony NFC Port-100 chipset.
                      The only product known to use this chipset is the PaSoRi RC-S380.
@@ -409,36 +406,40 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                      Products known to use this chipset are the PaSoRi RC-S330, RC-S360, and RC-S370.
                      https://github.com/nfcpy/nfcpy/blob/master/src/nfc/clf/rcs956.py
                      */
-                    
-                    if(is_PaSoRi) {
-                        PA_ObjectRef o = PA_CreateObject();
-                        if(is_Sony_RC_S310) {
-                            ob_set_s(o, L"slotName", "Sony PaSoRi RC-S310");
-                        }else
-                            if(is_Sony_RC_S320) {
-                                ob_set_s(o, L"slotName", "Sony PaSoRi RC-S320");
-                            }else
-                                if(is_Sony_RC_S330) {
+                    if(vid == LIBUSB_SONY) {
+                        switch (pid) {
+                            case LIBUSB_SONY_RC_S380:
+                            case LIBUSB_SONY_RC_S310:
+                            case LIBUSB_SONY_RC_S320:
+                            case LIBUSB_SONY_RC_S330:
+                                libusb_device_id = pid;
+                                break;
+                            default:
+                                break;
+                        }
+                        if(libusb_device_id != 0) {
+                            PA_ObjectRef o = PA_CreateObject();
+                            switch (libusb_device_id) {
+                                case LIBUSB_SONY_RC_S380:
+                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S380");
+                                    break;
+                                case LIBUSB_SONY_RC_S310:
+                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S310");
+                                    break;
+                                case LIBUSB_SONY_RC_S320:
+                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S320");
+                                    break;
+                                case LIBUSB_SONY_RC_S330:
                                     ob_set_s(o, L"slotName", "Sony PaSoRi RC-S330");
-                                }
-                        PA_Variable v = PA_CreateVariable(eVK_Object);
-                        PA_SetObjectVariable(&v, o);
-                        PA_SetCollectionElement(readers, PA_GetCollectionLength(readers), v);
-                        success = true;
-                    }
-                    
-                    if(is_Sony_RC_S380) {
-                        /*
-                         
-                         Macのドライバーは提供されていないのでLIBUSBで対応する
-                         
-                         */
-                        PA_ObjectRef o = PA_CreateObject();
-                        ob_set_s(o, L"slotName", "Sony PaSoRi RC-S380");
-                        PA_Variable v = PA_CreateVariable(eVK_Object);
-                        PA_SetObjectVariable(&v, o);
-                        PA_SetCollectionElement(readers, PA_GetCollectionLength(readers), v);
-                        success = true;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            PA_Variable v = PA_CreateVariable(eVK_Object);
+                            PA_SetObjectVariable(&v, o);
+                            PA_SetCollectionElement(readers, PA_GetCollectionLength(readers), v);
+                            success = true;
+                        }
                     }
                 }
             }
@@ -462,6 +463,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
     
     char nfc_type = 'F';
     unsigned int timeout = 60;
+    bool get_system = false;
+    bool get_area = false;
     
     if(args) {
         CUTF8String stringValue;
@@ -485,6 +488,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 timeout = _timeout;
             }
         }
+        get_system = ob_get_b(args, L"system");
     }
 
     std::string uuid;
@@ -506,7 +510,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
     threadCtx["IDm"] = "";
     threadCtx["PMm"] = "";
     threadCtx["nfc_type"] = nfc_type;//for libusb
-    threadCtx["timeout"] = timeout;//for libusb
+    threadCtx["timeout"] = timeout;
+    threadCtx["get_system"] = get_system;//for libpafe
     
     if(1) {
         std::lock_guard<std::mutex> lock(scardMutex);
@@ -514,9 +519,11 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
     }
     
     auto func = [](std::string uuid, std::string slotName) {
-        
+                
         char nfc_type = 'F';
         unsigned int timeout = 60;
+        bool get_system = false;
+        bool get_area = false;
         
         if(1) {
             std::lock_guard<std::mutex> lock(scardMutex);
@@ -524,17 +531,18 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             if(threadCtx.isObject()) {
                 nfc_type = threadCtx["nfc_type"].asInt();
                 timeout = threadCtx["timeout"].asInt();
+                get_system = threadCtx["get_system"].asBool();
             }
         }
         
         std::string errorMessage;
+        std::string serviceDataJson;
         
 #if VERSIONMAC
-        
+
+        __block bool success = false;
         __block std::string IDm;
         __block std::string PMm;
-        __block bool success = false;
-        
         __block std::string nfcid;
         __block std::string appdata;
         __block std::string pinfo;
@@ -553,25 +561,29 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             libusb_device_id = LIBUSB_SONY_RC_S330;
         }
         
-        if(libusb_device_id != 0){
+        if(libusb_device_id != 0) {
             
-            pasori *pasori = NULL;
-            felica *felica = NULL;
+            /* libpafe */
+            pasori *p = NULL;
+            felica *f = NULL;
             
+            /* libusb */
             libusb_device_handle *device = NULL;
             usb_device_info devinfo;
             usb_device_info *devinfop = &devinfo;
             std::vector<uint8_t> *usbbufp = &usbbuf;
+            Json::Value serviceData(Json::objectValue);
             
             bool isPolling = false;
             
             switch (libusb_device_id) {
                 case LIBUSB_SONY_RC_S330:
-                    pasori = pasori_open();
-                    if(pasori) {
-                        if(!pasori_init(pasori)) {
-                            pasori_set_timeout(pasori, LIBUSB_API_TIMEOUT);
-                            pasori_test_polling(pasori);
+                    p = pasori_open();
+                    if(p) {
+                        if(!pasori_init(p)) {
+                            pasori_set_timeout(p, LIBUSB_API_TIMEOUT);
+                            pasori_reset(p);
+//                            pasori_test_polling(p);
                             isPolling = true;
                         }
                     }
@@ -602,6 +614,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             }
                    
             if(isPolling) {
+                
                 time_t startTime = time(0);
                 time_t anchorTime = startTime;
 
@@ -618,15 +631,135 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                         switch (libusb_device_id) {
                                 
                             case LIBUSB_SONY_RC_S330:
-                                if(pasori){
-                                    felica = felica_polling(pasori, FELICA_POLLING_ANY, 0, 0);
-                                    if(!felica) {
+                                if(p){
+                                    f = felica_polling(p, FELICA_POLLING_ANY, 0, 0);
+                                    if(!f) {
                                         isPolling = false;
                                     }else{
-                                        print_hex(felica->IDm, 8, IDm);
-                                        print_hex(felica->PMm, 8, PMm);
+                                        
+                                        print_hex(f->IDm, 8, IDm);
+                                        print_hex(f->PMm, 8, PMm);
                                         success = true;
                                         isPolling = false;
+                                        
+                                        if(get_system) {
+                                                                                        
+                                            Json::Value systems(Json::arrayValue);
+                                            
+                                            felica *ff = NULL;
+                                            uint16 resp[256];
+                                            int n  = sizeof(resp)/sizeof(*resp);
+                                            int r = felica_request_system(f, &n, resp);
+                                            
+                                            /*
+                                             
+                                             https://www.sony.co.jp/Products/felica/business/tech-support/?j-short=tech-support#FeliCa02
+                                             https://ja.osdn.net/projects/felicalib/wiki/suica
+                                             
+                                             Request System Code コマンドを送信する。FeliCa のもつシステムコードのリストを得る。
+                                             https://ja.osdn.net/users/bhbops/pf/libpafe_lite/wiki/FrontPage
+                                             
+                                             */
+                                            
+                                            if (!r){
+
+                                                for (int i = 0; i < n; ++i) {
+                                                    ff = felica_polling(f->p, resp[i], 0, 0);
+                                                    if (ff == NULL) {
+                                                        break;
+                                                    }
+                                                    
+                                                    Json::Value system(Json::objectValue);
+                                                    Json::Value areas(Json::arrayValue);
+                                                    Json::Value services(Json::arrayValue);
+                                                    
+                                                    uint16 systemCode = resp[i];
+                                                    uint8_t b[2];
+                                                    b[0] = systemCode >> 8;
+                                                    b[1] = systemCode & 0x00FF;
+                                                    
+                                                    /*
+                                                     00FE :フェリカネットワークス社が管理する共通領域を示すシステムコード
+                                                     0003 :交通系
+                                                     802B :交通系（せたまるとIruCa）
+                                                     */
+                                                
+                                                    std::string hex;
+                                                    print_hex(b, 2, hex);
+                                                    system["code"] = hex;
+                                                    
+                                                    //http://jennychan.web.fc2.com/format/suica.html
+               
+                                                    r = felica_search_service(ff);
+                                                    
+                                                    /*
+                                                     
+                                                     0xffffがサービスコードとして返却されるまで Search Service Code コマンドを送信する。
+                                                      
+                                                     */
+                                                    
+                                                    if(!r){
+                                                        
+                                                        if(get_area) {
+                                                            for (int j = 0; j < ff->area_num; ++j) {
+                                                                Json::Value area(Json::objectValue);
+                                                                area["code"] = ff->area[j].code;
+                                                                area["attr"] = ff->area[j].attr;
+                                                                areas.append(area);
+                                                            }
+                                                        }
+                                                        
+                                                        for (int j = 0; j < ff->service_num; ++j) {
+                                                            Json::Value service(Json::objectValue);
+                                                            
+                                                            uint16 serviceCode = ff->service[j].bin;
+                                                            uint8_t b[2];
+                                                            b[0] = serviceCode >> 8;
+                                                            b[1] = serviceCode & 0x00FF;
+                                                        
+                                                            std::string hex;
+                                                            print_hex(b, 2, hex);
+                                                            service["code"] = hex;
+                                                            Json::Value data(Json::arrayValue);
+//                                                            service["code"] = ff->service[j].code;
+//                                                            service["attr"] = ff->service[j].attr;
+                                                            if (ff->service[j].attr & 1) {
+                                                                int k = 0;
+                                                                uint8_t b[16];
+                                                                while (!felica_read_single(ff, ff->service[j].bin, 0, k, b)) {
+                                                                    std::string hex;
+                                                                    print_hex(b, 16, hex);
+                                                                    data.append(hex);
+                                                                    service["data"] = hex;
+                                                                    k++;
+                                                                }
+                                                            }
+                                                            service["data"] = data;
+                                                            services.append(service);
+                                                        }
+                                                        
+                                                    }
+                                                    
+                                                    if(get_area) {
+                                                        system["areas"] = areas;
+                                                    }
+                                                    
+                                                    system["services"] = services;
+                                                    systems.append(system);
+                                                    
+                                                    free(ff);
+                                                    
+                                                }
+                                                
+                                            }
+                                            
+                                            serviceData["systems"] = systems;
+                                            
+                                            Json::StreamWriterBuilder writer;
+                                            writer["indentation"] = "";
+                                            serviceDataJson = Json::writeString(writer, serviceData);
+                                            
+                                        }
                                     }
                                 }
                                 break;
@@ -691,8 +824,11 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 switch (libusb_device_id) {
                         
                     case LIBUSB_SONY_RC_S330:
-                        if(pasori) {
-                            pasori_close(pasori);
+                        if(f) {
+                            free(f);
+                        }
+                        if(p) {
+                            pasori_close(p);
                         }
                         break;
                     case LIBUSB_SONY_RC_S380:
@@ -705,76 +841,85 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             }
         }else
         {
-            TKSmartCardSlotState state = TKSmartCardSlotStateMissing;
-//            NSInteger maxInputLength = 0L;
-//            NSInteger maxOutputLength = 0L;
-            __block TKSmartCardProtocol currentProtocol = 0L;
-            __block unsigned char SW1  = 0L;
-            __block unsigned char SW2  = 0L;
-            
             TKSmartCardSlotManager *manager = [TKSmartCardSlotManager defaultManager];
             if(manager) {
                 NSString *name = [[NSString alloc]initWithUTF8String:slotName.c_str()];
                 TKSmartCardSlot *slot = [manager slotNamed:name];
                 [name release];
                 if(slot) {
-                    
                     TKSmartCard *smartCard = [slot makeSmartCard];
-                    
                     if(smartCard) {
-                        
-                        smartCard.allowedProtocols = TKSmartCardProtocolAny;
-                        
-                                 [smartCard beginSessionWithReply:^(BOOL success, NSError *error)
-                                  {
-                                     if (success)
-                                     {
-                                         currentProtocol = [smartCard currentProtocol];
-                                         
-                                         /*
-                                          
-                                          give some time to the reader to display a message before the next APDU
-                                          https://ludovicrousseau.blogspot.com/2017/09/use-pinpad-reader-with-macos.html
-                                          
-                                          */
-                                         
-                                         sleep(1);
-                                         
-                                         smartCard.cla = 0x00;
-                                         
-                                         NSNumber *le = @0;//to get as much bytes as card provides
-                                         
-                                         uint8_t aid[] = {
-                                             APDU_CLA_GENERIC/*FF*/,
-                                             APDU_INS_GET_DATA/*CA*/,
-                                             APDU_P1_GET_UID /*00*/,
-                                             APDU_P2_NONE/*00*/,
-                                             APDU_LE_MAX_LENGTH/*00*/
-                                         }
-                                         ;
-                                         NSData *data = [NSData dataWithBytes:aid length:sizeof aid];
-                                         
-                                         UInt16 sw = 0L;//SW1SW2 result code
-                                         NSData *response = [smartCard sendIns:APDU_INS_GET_DATA
-                                                                            p1:APDU_P1_GET_UID
-                                                                            p2:APDU_P2_NONE
-                                                                          data:data
-                                                                            le:le
-                                                                            sw:&sw
-                                                                         error:&error];
-                                         SW1 = sw >> 8;
-                                         SW2 = sw & 0x00FF;
-                                         
-                                         if((SW1 == 0x90) && (SW2 == 0x00)){
-                                             print_hex((const uint8_t *)[response bytes], 8, IDm);
-                                             success = true;
-                                         }
-                                     }
-                                     
-                                 }];
-                        
-                        
-                        
+                        [smartCard beginSessionWithReply:^(BOOL _success, NSError *error) {
+                            if (_success) {
+                                
+                                sleep(1);
+                                
+                                smartCard.cla = APDU_CLA_GENERIC;/*FF*/
+                                NSNumber *le = @0;//to get as much bytes as card provides
+                                uint8_t aid[] = {};
+                                NSData *data = [NSData dataWithBytes:aid length:sizeof aid];
+                                
+                                UInt16 sw = 0;
+                                unsigned char SW1 = 0;
+                                unsigned char SW2 = 0;
+                                
+                                NSData *response;
+                                response = [smartCard sendIns:APDU_INS_GET_DATA/*CA*/
+                                                           p1:APDU_P1_GET_UID/*00*/
+                                                           p2:APDU_P2_NONE/*00*/
+                                                         data:data
+                                                           le:le/*00*/
+                                                           sw:&sw
+                                                        error:&error];
+                                if (error == nil)
+                                {
+        
+                                    SW1 = sw >> 8;
+                                    SW2 = sw & 0x00FF;
+                                    
+                                    if ( SW1 != 0x90 || SW2 != 0x00 )
+                                    {
+                                        if ( SW1 == 0x63 && SW2 == 0x00 )
+                                        {
+                                            /* data is not available */
+                                        }
+                                    }
+                                    else{
+                                        print_hex((const uint8_t *)[response bytes], 8, IDm);
+                                    }
+                                }
+                                
+                                response = [smartCard sendIns:APDU_INS_GET_DATA/*CA*/
+                                                           p1:APDU_P1_GET_PMm/*01*/
+                                                           p2:APDU_P2_NONE/*00*/
+                                                         data:data
+                                                           le:le/*00*/
+                                                           sw:&sw
+                                                        error:&error];
+                                if (error == nil)
+                                {
+        
+                                    SW1 = sw >> 8;
+                                    SW2 = sw & 0x00FF;
+                                    
+                                    if ( SW1 != 0x90 || SW2 != 0x00 )
+                                    {
+                                        if ( SW1 == 0x63 && SW2 == 0x00 )
+                                        {
+                                            /* data is not available */
+                                        }
+                                    }
+                                    else{
+                                        print_hex((const uint8_t *)[response bytes], 8, PMm);
+                                    }
+                                }
+                                
+                                if((IDm.length() != 0) && (PMm.length() != 0)) success = true;
+                                
+                            }
+                            
+                        }];
+                        sleep(1);
                     }else{
                         errorMessage = "TKSmartCard::makeSmartCard() failed";
                     }
@@ -787,21 +932,223 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
   
         }
 #else
-        
+     /*
+      
+      windows
+      
+      */
+        LPTSTR lpszReaderName = NULL;
+        CUTF16String name;
+        DWORD protocols = SCARD_PROTOCOL_T0|SCARD_PROTOCOL_T1;
+        DWORD mode = SCARD_SHARE_SHARED;
+        DWORD scope = SCARD_SCOPE_USER;
+        /*
+         
+         TODO: options - set protocol, mode, scope
+         
+         */
+        CUTF16String name;
+        u8_to_u16(slotName, name);
+        lpszReaderName = (LPTSTR)name.c_str();
+        if(name.length()) {
+            SCARDCONTEXT hContext;
+            LONG lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
+            /* http://eternalwindows.jp/security/scard/scard02.html */
+            if(lResult == SCARD_E_NO_SERVICE) {
+                HANDLE hEvent = SCardAccessStartedEvent();
+                DWORD dwResult = WaitForSingleObject(hEvent, DEFAULT_TIMEOUT_MS_FOR_RESOURCE_MANAGER);
+                if (dwResult == WAIT_OBJECT_0) {
+                    lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
+                }
+                SCardReleaseStartedEvent();
+                if (lResult == SCARD_S_SUCCESS) {
+                    SCARD_READERSTATE readerState;
+                    readerState.szReader = lpszReaderName;
+                    readerState.dwCurrentState = SCARD_STATE_UNAWARE;
+                    /* return immediately; check state */
+                    lResult = SCardGetStatusChange(hContext, 0, &readerState, 1);
+                    if (lResult == SCARD_S_SUCCESS) {
+                    
+                        int is_card_present = 0;
+                        
+                        time_t startTime = time(0);
+                        time_t anchorTime = startTime;
+                        
+                        bool isPolling = true;
+
+                        while (isPolling) {
+                            
+                            time_t now = time(0);
+                            time_t elapsedTime = abs(startTime - now);
+                            
+                            if(elapsedTime > 0)
+                            {
+                                startTime = now;
+                                PA_YieldAbsolute();
+                            }
+                            
+                            elapsedTime = abs(anchorTime - now);
+                            
+                            if(elapsedTime < timeout) {
+
+                                if (readerState.dwEventState & SCARD_STATE_EMPTY) {
+                                    lResult = SCardGetStatusChange(hContext, LIBPCSC_API_TIMEOUT, &readerState, 1);
+                                }
+                                
+                                if (readerState.dwEventState & SCARD_STATE_UNAVAILABLE) {
+                                    isPolling = false;
+                                }
+                                
+                                if (readerState.dwEventState & SCARD_STATE_PRESENT) {
+                                    is_card_present = 1;
+                                    isPolling = false;
+                                }
+                                 
+                            }else{
+                                /* timeout */
+                                isPolling = false;
+                            }
+                               
+                        }
+                        
+                        if(is_card_present) {
+                     
+                            SCARDHANDLE hCard;
+                            DWORD dwActiveProtocol;
+                            DWORD dwProtocol;
+                            DWORD dwAtrSize;
+                            DWORD dwState;
+                            
+                            BYTE atr[256];
+                            
+                            lResult = SCardConnect(hContext,
+                                                   lpszReaderName,
+                                                   mode,
+                                                   protocols,
+                                                   &hCard,
+                                                   &dwActiveProtocol);
+                            switch (lResult)
+                            {
+                                case (LONG)SCARD_W_REMOVED_CARD:
+                                    /* SCARD_W_REMOVED_CARD */
+                                    break;
+                                case SCARD_S_SUCCESS:
+                                    lResult = SCardStatus(hCard, NULL, NULL, &dwState, &dwProtocol, atr, &dwAtrSize);
+                                    if (lResult == SCARD_S_SUCCESS) {
+                                        
+                                        BYTE pbSendBuffer_GetIDm[5] = {
+                                            APDU_CLA_GENERIC,
+                                            APDU_INS_GET_DATA,
+                                            APDU_P1_GET_UID,
+                                            APDU_P2_NONE,
+                                            APDU_LE_MAX_LENGTH
+                                        };
+                                        
+                                        BYTE pbSendBuffer_GetPMm[5] = {
+                                            APDU_CLA_GENERIC,
+                                            APDU_INS_GET_DATA,
+                                            APDU_P1_GET_PMm,
+                                            APDU_P2_NONE,
+                                            APDU_LE_MAX_LENGTH
+                                        };
+
+                                        BYTE pbRecvBuffer[256];
+                                        DWORD pcbRecvLength = 256;
+                                        DWORD cbRecvLength = 0;
+                                        BYTE SW1 = 0;
+                                        BYTE SW2 = 0;
+                                        lResult = SCardTransmit(hCard,
+                                                                SCARD_PCI_T1,
+                                                                pbSendBuffer_GetIDm,
+                                                                sizeof(pbSendBuffer_GetIDm),
+                                                                NULL,
+                                                                pbRecvBuffer,
+                                                                &pcbRecvLength);
+                                        switch(lResult)
+                                        {
+                                            case SCARD_S_SUCCESS:
+                                                cbRecvLength = *pcbRecvLength;
+                                                SW1 = pbRecvBuffer[cbRecvLength - 2];
+                                                SW2 = pbRecvBuffer[cbRecvLength - 1];
+                                                if ( SW1 != 0x90 || SW2 != 0x00 )
+                                                {
+                                                    if ( SW1 == 0x63 && SW2 == 0x00 )
+                                                    {
+                                                        /* data is not available */
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    IDm = std::string((const char *)pbRecvBuffer, cbRecvLength-2);
+                                                }
+                                                break;
+                                            case 0x458:
+                                                lResult = SCARD_W_REMOVED_CARD;
+                                                break;
+                                            case 0x16:
+                                                lResult = SCARD_E_INVALID_PARAMETER;
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                        lResult = SCardTransmit(hCard,
+                                                                SCARD_PCI_T1,
+                                                                pbSendBuffer_GetPMm,
+                                                                sizeof(pbSendBuffer_GetPMm),
+                                                                NULL,
+                                                                pbRecvBuffer,
+                                                                &pcbRecvLength);
+                                        switch(lResult)
+                                        {
+                                            case SCARD_S_SUCCESS:
+                                                cbRecvLength = *pcbRecvLength;
+                                                SW1 = pbRecvBuffer[cbRecvLength - 2];
+                                                SW2 = pbRecvBuffer[cbRecvLength - 1];
+                                                if ( SW1 != 0x90 || SW2 != 0x00 )
+                                                {
+                                                    if ( SW1 == 0x63 && SW2 == 0x00 )
+                                                    {
+                                                        /* data is not available */
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    PMm = std::string((const char *)pbRecvBuffer, cbRecvLength-2);
+                                                }
+                                                break;
+                                            case 0x458:
+                                                lResult = SCARD_W_REMOVED_CARD;
+                                                break;
+                                            case 0x16:
+                                                lResult = SCARD_E_INVALID_PARAMETER;
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }/* SCardStatus */
+                                    SCardDisconnect(hCard, SCARD_LEAVE_CARD);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    SCardReleaseContext(hContext);
+                }
+            }
+        }
 #endif
 
         if(1) {
             std::lock_guard<std::mutex> lock(scardMutex);
             if(scardStorage[uuid].isObject()) {
-                /*
-                 write params here
-                 */
                 scardStorage[uuid]["IDm"] = IDm;
                 scardStorage[uuid]["PMm"] = PMm;
                 scardStorage[uuid]["errorMessage"] = errorMessage;
                 scardStorage[uuid]["slotName"] = slotName;
                 scardStorage[uuid]["success"] = success;
                 scardStorage[uuid]["complete"] = true;
+                scardStorage[uuid]["serviceDataJson"] = serviceDataJson;
             }
         }
     };
@@ -835,7 +1182,7 @@ static void SCARD_Get_status(PA_PluginParameters params) {
     
     bool complete = false;
     bool success = false;
-    std::string slotName, errorMessage, IDm, PMm, nfcid, appdata, pinfo, cid;
+    std::string slotName, errorMessage, IDm, PMm, nfcid, appdata, pinfo, cid, serviceDataJson;
     
     Json::Value threadCtx = scardStorage[uuid];
     if(threadCtx.isObject()) {
@@ -850,6 +1197,7 @@ static void SCARD_Get_status(PA_PluginParameters params) {
         appdata = threadCtx["appdata"].asString();
         pinfo = threadCtx["pinfo"].asString();
         cid = threadCtx["cid"].asString();
+        serviceDataJson = threadCtx["serviceDataJson"].asString();
     }
     
     ob_set_s(status, L"uuid", uuid.c_str());
@@ -859,6 +1207,28 @@ static void SCARD_Get_status(PA_PluginParameters params) {
 
     if(errorMessage.length() != 0) {
         ob_set_s(status, L"errorMessage", errorMessage.c_str());
+    }
+    
+    if(serviceDataJson.length() != 0) {
+        
+        CUTF16String jsonString;
+        u8_to_u16(serviceDataJson, jsonString);
+        
+//        ob_set_s(status, L"serviceDataJson", serviceDataJson.c_str());
+        
+        PA_ulong32 version = PA_Get4DVersion() & 0x0000FFFF;
+        PA_Variable params[2], result;
+        PA_ObjectRef object = NULL;
+        PA_Unistring string;
+        
+        string = PA_CreateUnistring((PA_Unichar *)jsonString.c_str());
+        PA_SetStringVariable( &params[0], &string );
+        PA_SetLongintVariable( &params[1], eVK_Object );
+        result = PA_ExecuteCommandByID( 1218, params, 2 );    // JSON Parse
+        object = PA_GetObjectVariable( result );
+        PA_DisposeUnistring( &string );
+        
+        ob_set_o(status, L"serviceData", object);
     }
     
     if(IDm.length() != 0) {
@@ -955,6 +1325,32 @@ static void u16_to_u8(CUTF16String& u16, std::string& u8) {
         CFIndex len = 0;
         CFStringGetBytes(str, CFRangeMake(0, CFStringGetLength(str)), kCFStringEncodingUTF8, 0, true, (UInt8 *)&buf[0], size, &len);
         u8 = std::string((const char *)&buf[0], len);
+        CFRelease(str);
+    }
+#endif
+}
+
+static void u8_to_u16(std::string& u8, CUTF16String& u16) {
+    
+#ifdef _WIN32
+    int len = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)u8.c_str(), u8.length(), NULL, 0);
+    
+    if(len){
+        std::vector<uint8_t> buf((len + 1) * sizeof(PA_Unichar));
+        if(MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)u8.c_str(), u8.length(), (LPWSTR)&buf[0], len)){
+            u16 = CUTF16String((const PA_Unichar *)&buf[0]);
+        }
+    }else{
+        u16 = CUTF16String((const PA_Unichar *)L"");
+    }
+    
+#else
+    CFStringRef str = CFStringCreateWithBytes(kCFAllocatorDefault, (const UInt8 *)u8.c_str(), u8.length(), kCFStringEncodingUTF8, true);
+    if(str){
+        CFIndex len = CFStringGetLength(str);
+        std::vector<uint8_t> buf((len+1) * sizeof(PA_Unichar));
+        CFStringGetCharacters(str, CFRangeMake(0, len), (UniChar *)&buf[0]);
+        u16 = CUTF16String((const PA_Unichar *)&buf[0]);
         CFRelease(str);
     }
 #endif

@@ -1,0 +1,211 @@
+﻿{
+	"$4d": {
+		"version": "1",
+		"kind": "form"
+	},
+	"windowSizingX": "variable",
+	"windowSizingY": "variable",
+	"windowMinWidth": 0,
+	"windowMinHeight": 0,
+	"windowMaxWidth": 32767,
+	"windowMaxHeight": 32767,
+	"rightMargin": 20,
+	"bottomMargin": 20,
+	"events": [
+		"onLoad",
+		"onUnload"
+	],
+	"windowTitle": "利用履歴",
+	"destination": "detailScreen",
+	"pages": [
+		{
+			"objects": {}
+		},
+		{
+			"objects": {
+				"Text": {
+					"type": "text",
+					"text": "IDm",
+					"top": 16,
+					"left": 10,
+					"width": 50,
+					"height": 16
+				},
+				"IDm": {
+					"type": "input",
+					"left": 60,
+					"top": 16,
+					"width": 214,
+					"height": 17,
+					"dataSource": "Form:C1466.IDm",
+					"enterable": false,
+					"contextMenu": "none"
+				},
+				"serviceData": {
+					"type": "input",
+					"left": 10,
+					"top": 256,
+					"width": 1069,
+					"height": 113,
+					"dataSource": "Form:C1466.serviceData",
+					"enterable": false,
+					"dataSourceTypeHint": "object",
+					"contextMenu": "none",
+					"focusable": false,
+					"sizingX": "grow",
+					"sizingY": "grow"
+				},
+				"timestamp": {
+					"type": "input",
+					"left": 280,
+					"top": 16,
+					"width": 174,
+					"height": 17,
+					"dataSource": "Form:C1466.timestamp",
+					"enterable": false,
+					"contextMenu": "none",
+					"fill": "transparent"
+				},
+				"Info": {
+					"type": "listbox",
+					"left": 10,
+					"top": 52,
+					"width": 1069,
+					"height": 189,
+					"events": [],
+					"listboxType": "collection",
+					"dataSource": "Form:C1466.info",
+					"resizingMode": "legacy",
+					"sizingX": "grow",
+					"sizingY": "grow",
+					"columns": [
+						{
+							"header": {
+								"name": "Header7",
+								"text": "利用"
+							},
+							"name": "Column7",
+							"dataSource": "This:C1470.利用",
+							"enterable": false,
+							"footer": {
+								"name": "Footer7"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"text": "端末種",
+								"name": "Header1"
+							},
+							"name": "Column1",
+							"dataSource": "This:C1470.端末種",
+							"enterable": false,
+							"footer": {
+								"name": "Footer1"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header2",
+								"text": "処理"
+							},
+							"name": "Column2",
+							"dataSource": "This:C1470.処理",
+							"enterable": false,
+							"footer": {
+								"name": "Footer2"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header3",
+								"text": "日付"
+							},
+							"name": "Column3",
+							"dataSource": "This:C1470.日付",
+							"enterable": false,
+							"footer": {
+								"name": "Footer3"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header8",
+								"text": "利用時刻"
+							},
+							"name": "Column8",
+							"dataSource": "This:C1470.利用時刻",
+							"dataSourceTypeHint": "text",
+							"footer": {
+								"name": "Footer8"
+							},
+							"resizable": false,
+							"enterable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header6",
+								"text": "出場駅"
+							},
+							"name": "Column6",
+							"dataSource": "This:C1470.出場駅",
+							"enterable": false,
+							"footer": {
+								"name": "Footer6"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header5",
+								"text": "入場駅"
+							},
+							"name": "Column5",
+							"dataSource": "This:C1470.入場駅",
+							"enterable": false,
+							"footer": {
+								"name": "Footer5"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						},
+						{
+							"header": {
+								"name": "Header4",
+								"text": "残高"
+							},
+							"name": "Column4",
+							"dataSource": "This:C1470.残高",
+							"enterable": false,
+							"footer": {
+								"name": "Footer4"
+							},
+							"resizable": false,
+							"truncateMode": "none"
+						}
+					]
+				},
+				"Splitter": {
+					"type": "splitter",
+					"left": 7,
+					"top": 248,
+					"width": 1077,
+					"height": 10,
+					"sizingX": "grow",
+					"sizingY": "move"
+				}
+			}
+		}
+	],
+	"geometryStamp": 105,
+	"method": "method.4dm"
+}

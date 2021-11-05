@@ -12,9 +12,7 @@
 #define PLUGIN_SCARD_H
 
 #include "4DPluginAPI.h"
-
 #include "4DPlugin-JSON.h"
-
 #include "json/json.h"
 
 #if VERSIONMAC
@@ -28,7 +26,11 @@
 #define LIBUSB_API_TIMEOUT_FOR_POLLING 500 //milliseconds
 #define LIBUSB_MAX_STRING_LENGTH 512
 #define LIBUSB_SONY_RC_S380 0x06C3
+/* SONY PaSoRi */
+#define LIBUSB_SONY 0x054C
 #define LIBUSB_SONY_RC_S330 0x02E1
+#define LIBUSB_SONY_RC_S320 0x01BB
+#define LIBUSB_SONY_RC_S310 0x006C
 struct device_info {
   libusb_device *dev;
   libusb_device_handle *dh;
@@ -55,16 +57,11 @@ static void SCARD_Get_readers(PA_PluginParameters params);
 static void SCARD_Read_tag(PA_PluginParameters params);
 static void SCARD_Get_status(PA_PluginParameters params);
 
+#pragma mark -
+
 static short checksum(char cmd, uint8_t *buf, int size);
 static void u16_to_u8(CUTF16String& u16, std::string& u8);
-
-/*
- SCARD_PROTOCOL_T0  = TKSmartCardProtocolT0  = 0
- SCARD_PROTOCOL_T1  = TKSmartCardProtocolT1  = 1
- SCARD_PROTOCOL_RAW = (n/a on macos)         = 4
- SCARD_PROTOCOL_T15 = TKSmartCardProtocolT15 = 15
-*/
-
+static void u8_to_u16(std::string& u8, CUTF16String& u16);
 enum
 {
     APDU_CLA_GENERIC = 0xFF,
@@ -121,5 +118,12 @@ enum
     CARD_TYPE_TYPE_A_NFC_DEP = 0x09,
     CARD_TYPE_FELICA_NFC_DEP = 0x0A
 };
+
+struct __tag__sinfo
+{
+  int c;
+  char *d;
+};
+typedef struct __tag__sinfo sinfo;
 
 #endif /* PLUGIN_SCARD_H */

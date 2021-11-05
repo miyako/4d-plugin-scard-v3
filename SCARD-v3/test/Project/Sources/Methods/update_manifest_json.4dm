@@ -1,4 +1,4 @@
-//%attributes = {"invisible":true,"preemptive":"capable"}
+//%attributes = {"invisible":true}
 $t:=Get text from pasteboard:C524
 
 $j:=JSON Parse:C1218($t)

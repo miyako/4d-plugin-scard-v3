@@ -1,6 +1,35 @@
 ﻿{
 	"editors": [
 		{
+			"type": "form",
+			"id": 1,
+			"formName": "TEST"
+		},
+		{
+			"type": "method",
+			"id": 2147483630,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "parse_090f"
+			}
+		},
+		{
+			"type": "method",
+			"id": 2147483631,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "reduce_090f"
+			}
+		},
+		{
+			"type": "method",
+			"id": 2147483632,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "TEST_f"
+			}
+		},
+		{
 			"type": "method",
 			"id": 2147483642,
 			"codeDescriptor": {
@@ -9,7 +38,23 @@
 			}
 		},
 		{
-			"type": "explorer"
+			"type": "method",
+			"id": 2147483633,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "get_station_name"
+			}
+		},
+		{
+			"type": "toolbox"
+		},
+		{
+			"type": "method",
+			"id": 2147483635,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "StationCode"
+			}
 		}
 	]
 }
