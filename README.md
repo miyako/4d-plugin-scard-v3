@@ -9,4 +9,6 @@
 * SONY PaSoRi [RC-S380](https://www.sony.co.jp/Products/felica/consumer/support/faq/detail/253.html): [libusb](https://github.com/libusb/libusb)で対応
 * SONY PaSoRi RC-S300 11月11日発売予定: TKSmartCardSlotManagerで対応予定
 
-USBは別スレッドで待ち受けします。
+---
+
+* [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
