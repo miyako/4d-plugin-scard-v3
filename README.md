@@ -25,6 +25,9 @@
 
 RC-S380の独自プロトコルに対応していますが，リーダーはVID/PIDではなくデバイス名で判別しています。
 
+![1](https://user-images.githubusercontent.com/1725068/140601255-85ed948b-74d4-4930-83a8-1db5debc8149.png)
+
+
 #### 参考記事
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
