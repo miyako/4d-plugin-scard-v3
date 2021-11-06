@@ -25,8 +25,7 @@
 
 RC-S380の独自プロトコルに対応していますが，リーダーはVID/PIDではなくデバイス名で判別しています。
 
-![1](https://user-images.githubusercontent.com/1725068/140601255-85ed948b-74d4-4930-83a8-1db5debc8149.png)
-
+![1](https://user-images.githubusercontent.com/1725068/140601288-027c4fe3-d544-43a0-b248-61d61545db6e.png)
 
 #### 参考記事
 
