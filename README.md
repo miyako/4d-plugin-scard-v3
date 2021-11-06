@@ -25,3 +25,4 @@
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
 
+* [PaSoRi RC-S380特有の情報](https://tomosoft.jp/design/?p=5543)
