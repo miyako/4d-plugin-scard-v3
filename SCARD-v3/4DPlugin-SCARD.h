@@ -44,6 +44,9 @@ static bool checkAccess(PA_ObjectRef status);
 #include "libpafe.h"
 #include "pasori_command.h"
 #include "felica_command.h"
+#else
+#define DEFAULT_TIMEOUT_MS_FOR_RESOURCE_MANAGER 5000
+#define LIBPCSC_API_TIMEOUT 2000  //milliseconds
 #endif
 
 #include <iostream>
@@ -62,6 +65,7 @@ static void SCARD_Get_status(PA_PluginParameters params);
 static short checksum(char cmd, uint8_t *buf, int size);
 static void u16_to_u8(CUTF16String& u16, std::string& u8);
 static void u8_to_u16(std::string& u8, CUTF16String& u16);
+
 enum
 {
     APDU_CLA_GENERIC = 0xFF,

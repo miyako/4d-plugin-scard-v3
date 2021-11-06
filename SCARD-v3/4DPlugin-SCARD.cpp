@@ -86,8 +86,8 @@ static void generateUuid(std::string &uuid) {
             std::vector<wchar_t>buf(len+1);
             memcpy(&buf[0], str, len * sizeof(wchar_t));
             _wcsupr((wchar_t *)&buf[0]);
-            std::wstring wstr = std::wstring((const wchar_t *)&buf[0], len);
-            wcs_to_utf8(wstr, uuid);
+			CUTF16String wstr = CUTF16String((const PA_Unichar *)&buf[0], len);
+            u16_to_u8(wstr, uuid);
             RpcStringFree(&str);
         }
     }
@@ -109,6 +109,7 @@ static void print_hex(const uint8_t *pbtData, const size_t szBytes, std::string 
     hex = std::string((char *)&buf[0], (szBytes * 2));
 }
 
+#if VERSIONMAC
 static bool get_usb_information(libusb_device_handle *dh, usb_device_info *devinfo) {
     
     memset(devinfo, 0, sizeof(usb_device_info));
@@ -159,8 +160,6 @@ static bool get_usb_information(libusb_device_handle *dh, usb_device_info *devin
     
     return true;
 }
-
-#pragma mark -
 
 static int packet_init(usb_device_info *devinfo, int timeout) {
     
@@ -218,6 +217,8 @@ static size_t packet_send(usb_device_info *devinfo, uint8_t *buf, int size,
         std::cout << "data receive error..." << std::endl;
         return 0;
     }
+    
+    len = 0;
     
     // receive response
     ret = libusb_bulk_transfer(devinfo->dh, devinfo->ep_in,
@@ -329,13 +330,13 @@ static size_t packet_inset_rf(usb_device_info *devinfo, char type,
 }
 
 static size_t packet_inset_protocol_1(usb_device_info *devinfo,
-                                        std::vector<uint8_t> *usbbuf, int timeout) {
+                                      std::vector<uint8_t> *usbbuf, int timeout) {
     
-  uint8_t cmd[39];
+    uint8_t cmd[39];
     
-  memcpy(cmd, "\x02\x00\x18\x01\x01\x02\x01\x03\x00\x04\x00\x05\x00\x06\x00\x07\x08\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0e\x04\x0f\x00\x10\x00\x11\x00\x12\x00\x13\x06", 39);
+    memcpy(cmd, "\x02\x00\x18\x01\x01\x02\x01\x03\x00\x04\x00\x05\x00\x06\x00\x07\x08\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0e\x04\x0f\x00\x10\x00\x11\x00\x12\x00\x13\x06", 39);
     
-  return packet_write(devinfo, cmd, sizeof(cmd), usbbuf, timeout);
+    return packet_write(devinfo, cmd, sizeof(cmd), usbbuf, timeout);
 }
 
 static size_t packet_inset_protocol_2(usb_device_info *devinfo, char type,
@@ -359,11 +360,14 @@ static size_t packet_inset_protocol_2(usb_device_info *devinfo, char type,
     
   return packet_write(devinfo, cmd, len, usbbuf, timeout);
 }
+#endif
 
 #pragma mark -
 
 static void SCARD_Get_readers(PA_PluginParameters params) {
     
+	PA_ObjectRef options = PA_GetObjectParameter(params, 1);
+
     PA_ObjectRef status = PA_CreateObject();
     PA_CollectionRef readers = PA_CreateCollection();
     
@@ -397,6 +401,71 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
       windows
       
       */
+
+	bool success = false;
+
+	uint32_t scope = SCARD_SCOPE_USER;
+
+	if (options) {
+		if (ob_is_defined(options, L"scope")) {
+			int _scope = ob_get_n(options, L"scope");
+			switch (_scope) {
+			case SCARD_SCOPE_USER:
+			case SCARD_SCOPE_TERMINAL:
+			case SCARD_SCOPE_SYSTEM:
+				scope = _scope;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	SCARDCONTEXT hContext;
+
+	LONG lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
+
+	/* http://eternalwindows.jp/security/scard/scard02.html */
+
+	if (lResult == SCARD_E_NO_SERVICE) {
+		HANDLE hEvent = SCardAccessStartedEvent();
+		DWORD dwResult = WaitForSingleObject(hEvent, DEFAULT_TIMEOUT_MS_FOR_RESOURCE_MANAGER);
+		if (dwResult == WAIT_OBJECT_0) {
+			lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
+		}
+		SCardReleaseStartedEvent();
+	}
+
+	if (lResult == SCARD_S_SUCCESS) {
+
+		DWORD len;
+		lResult = SCardListReaders(hContext, SCARD_ALL_READERS, NULL, &len);
+		if (lResult == SCARD_S_SUCCESS) {
+
+			std::vector<TCHAR>buf(len);
+			lResult = SCardListReaders(hContext, SCARD_ALL_READERS, &buf[0], &len);
+			if (lResult == SCARD_S_SUCCESS) {
+
+				LPTSTR pReader = (LPTSTR)&buf[0];
+				if (pReader) {
+					while ('\0' != *pReader) {
+
+						PA_ObjectRef reader = PA_CreateObject();
+						ob_set_a(reader, L"slotName", pReader);
+						pReader = pReader + wcslen(pReader) + 1;
+
+						PA_Variable v = PA_CreateVariable(eVK_Object);
+						PA_SetObjectVariable(&v, reader);
+						PA_SetCollectionElement(readers, PA_GetCollectionLength(readers), v);
+						PA_ClearVariable(&v);
+					}
+					success = true;
+				}
+
+			}
+		}
+		SCardReleaseContext(hContext);
+	}
 #endif
     
 #if VERSIONMAC
@@ -483,40 +552,40 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
 
 static void SCARD_Read_tag(PA_PluginParameters params) {
 
-    PA_ObjectRef status = PA_CreateObject();
-    PA_ObjectRef args = PA_GetObjectParameter(params, 1);
-    
-    std::string slotName;
-    
-    char nfc_type = 'F';
-    unsigned int timeout = 60;
-    bool get_system = false;
-    bool get_area = false;
-    
-    if(args) {
-        CUTF8String stringValue;
-        if(ob_get_s(args, L"slotName", &stringValue)) {
-            slotName = (const char *)stringValue.c_str();
-        }
-        if(ob_get_s(args, L"card", &stringValue)) {
-            if(stringValue == (const uint8_t *)"FeliCa") {
-                nfc_type = 'F';
-            }
-            if(stringValue == (const uint8_t *)"TypeB") {
-                nfc_type = 'B';
-            }
-            if(stringValue == (const uint8_t *)"TypeA") {
-                nfc_type = 'A';
-            }
-        }
-        if(ob_is_defined(args, L"timeout")) {
-            int _timeout = ob_get_n(args, L"timeout");
-            if(_timeout > 0) {
-                timeout = _timeout;
-            }
-        }
-        get_system = ob_get_b(args, L"system");
-    }
+	PA_ObjectRef status = PA_CreateObject();
+	PA_ObjectRef args = PA_GetObjectParameter(params, 1);
+
+	std::string slotName;
+
+	char nfc_type = 'F';
+	unsigned int timeout = 60;
+	bool get_system = false;
+	bool get_area = false;
+
+	if (args) {
+		CUTF8String stringValue;
+		if (ob_get_s(args, L"slotName", &stringValue)) {
+			slotName = (const char *)stringValue.c_str();
+		}
+		if (ob_get_s(args, L"card", &stringValue)) {
+			if (stringValue == (const uint8_t *)"FeliCa") {
+				nfc_type = 'F';
+			}
+			if (stringValue == (const uint8_t *)"TypeB") {
+				nfc_type = 'B';
+			}
+			if (stringValue == (const uint8_t *)"TypeA") {
+				nfc_type = 'A';
+			}
+		}
+		if (ob_is_defined(args, L"timeout")) {
+			int _timeout = ob_get_n(args, L"timeout");
+			if (_timeout > 0) {
+				timeout = _timeout;
+			}
+		}
+		get_system = ob_get_b(args, L"system");
+	}
 
     std::string uuid;
     generateUuid(uuid);
@@ -562,6 +631,16 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             }
         }
         
+		bool is_pasori_s380 = false;
+
+		if ((slotName == "Sony FeliCa Port/PaSoRi 3.0 0")
+			|| (slotName == "Sony PaSoRi RC-S380")
+			|| (slotName == "Sony RC-S380/P")
+			|| (slotName == "Sony RC-S380/S")
+			) {
+			is_pasori_s380 = true;
+		}
+
         std::string errorMessage;
         std::string serviceDataJson;
         
@@ -669,9 +748,14 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                         isPolling = false;
                                         
                                         if(get_system) {
-                                                                                        
-                                            Json::Value systems(Json::arrayValue);
+                                                 
+                                            /* 090f */
                                             
+                                            Json::Value service(Json::objectValue);
+
+                                            service["code"] = "090f";
+                                            Json::Value data(Json::arrayValue);
+
                                             felica *ff = NULL;
                                             uint16 resp[256];
                                             int n  = sizeof(resp)/sizeof(*resp);
@@ -688,104 +772,70 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                              */
                                             
                                             if (!r){
-
                                                 for (int i = 0; i < n; ++i) {
-                                                    ff = felica_polling(f->p, resp[i], 0, 0);
-                                                    if (ff == NULL) {
-                                                        break;
-                                                    }
-                                                    
-                                                    Json::Value system(Json::objectValue);
-                                                    Json::Value areas(Json::arrayValue);
-                                                    Json::Value services(Json::arrayValue);
-                                                    
-                                                    uint16 systemCode = resp[i];
-                                                    uint8_t b[2];
-                                                    b[0] = systemCode >> 8;
-                                                    b[1] = systemCode & 0x00FF;
                                                     
                                                     /*
                                                      00FE :フェリカネットワークス社が管理する共通領域を示すシステムコード
                                                      0003 :交通系
                                                      802B :交通系（せたまるとIruCa）
                                                      */
-                                                
-                                                    std::string hex;
-                                                    print_hex(b, 2, hex);
-                                                    system["code"] = hex;
                                                     
-                                                    //http://jennychan.web.fc2.com/format/suica.html
-               
-                                                    r = felica_search_service(ff);
-                                                    
-                                                    /*
-                                                     
-                                                     0xffffがサービスコードとして返却されるまで Search Service Code コマンドを送信する。
-                                                      
-                                                     */
-                                                    
-                                                    if(!r){
+                                                    if ((resp[i] == 0x0003) || (resp[i] == 0x80de)) {
                                                         
-                                                        if(get_area) {
-                                                            for (int j = 0; j < ff->area_num; ++j) {
-                                                                Json::Value area(Json::objectValue);
-                                                                area["code"] = ff->area[j].code;
-                                                                area["attr"] = ff->area[j].attr;
-                                                                areas.append(area);
-                                                            }
+                                                        uint16 systemCode = resp[i];
+                                                        ff = felica_polling(f->p, systemCode, 0, 0);
+                                                        if (ff == NULL) {
+                                                            break;
                                                         }
                                                         
-                                                        for (int j = 0; j < ff->service_num; ++j) {
-                                                            Json::Value service(Json::objectValue);
-                                                            
-                                                            uint16 serviceCode = ff->service[j].bin;
-                                                            uint8_t b[2];
-                                                            b[0] = serviceCode >> 8;
-                                                            b[1] = serviceCode & 0x00FF;
+                                                        uint8_t b[2];
+                                                        b[0] = systemCode >> 8;
+                                                        b[1] = systemCode & 0x00FF;
                                                         
-                                                            std::string hex;
-                                                            print_hex(b, 2, hex);
-                                                            service["code"] = hex;
-                                                            Json::Value data(Json::arrayValue);
-//                                                            service["code"] = ff->service[j].code;
-//                                                            service["attr"] = ff->service[j].attr;
-                                                            if (ff->service[j].attr & 1) {
-                                                                int k = 0;
-                                                                uint8_t b[16];
-                                                                while (!felica_read_single(ff, ff->service[j].bin, 0, k, b)) {
-                                                                    std::string hex;
-                                                                    print_hex(b, 16, hex);
-                                                                    data.append(hex);
-                                                                    service["data"] = hex;
-                                                                    k++;
+                                                        r = felica_search_service(ff);
+                                                        
+                                                        /*
+                                                         
+                                                         0xffffがサービスコードとして返却されるまで Search Service Code コマンドを送信する。
+                                                         
+                                                         */
+                                                        
+                                                        if(!r){
+                                                            for (int j = 0; j < ff->service_num; ++j) {
+                                                                uint16 serviceCode = ff->service[j].bin;
+                                                                if(serviceCode == 0x090f) {
+                                                                    service["code"] = "090f";
+                                                                    if (ff->service[j].attr & 1) {
+                                                                        int k = 0;
+                                                                        uint8_t b[16];
+                                                                        while (!felica_read_single(ff, ff->service[j].bin, 0, k, b)) {
+                                                                            std::string hex;
+                                                                            print_hex(b, 16, hex);
+                                                                            data.append(hex);
+                                                                            service["data"] = hex;
+                                                                            k++;
+                                                                        }
+                                                                    }
+                                                                    break;
                                                                 }
                                                             }
-                                                            service["data"] = data;
-                                                            services.append(service);
                                                         }
                                                         
+                                                        free(ff);
+                                                        
+                                                        break;
                                                     }
-                                                    
-                                                    if(get_area) {
-                                                        system["areas"] = areas;
-                                                    }
-                                                    
-                                                    system["services"] = services;
-                                                    systems.append(system);
-                                                    
-                                                    free(ff);
-                                                    
                                                 }
-                                                
                                             }
-                                            
-                                            serviceData["systems"] = systems;
-                                            
+                                                    
+                                            service["data"] = data;
+
                                             Json::StreamWriterBuilder writer;
                                             writer["indentation"] = "";
-                                            serviceDataJson = Json::writeString(writer, serviceData);
-                                            
+                                            serviceDataJson = Json::writeString(writer, service);
+    
                                         }
+                                                
                                     }
                                 }
                                 break;
@@ -859,50 +909,97 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                         break;
                     case LIBUSB_SONY_RC_S380:
                         if(success) {
-                            
-                            unsigned int service_code = 0x090f;
-                            
-                            /*
-                             service code is a 16-bit structure composed of
-                             10-bit service number and a 6-bit service
-                             number, attribute
-                             https://seesaawiki.jp/flashair-dev/d/NFC%3A%B3%AB%C8%AF
-                             */
-                            
-                            uint16_t sc = service_code >> 6;
-                            uint8_t sa = service_code & 0x3f;
-                            uint16_t bc = 0;
-                            
-                            uint8_t cmd[17];
-                            
-                            cmd[0] = 17;//Command Length
-                            cmd[1] = 0x06;//Command (0x06 = Read Without Encryption)
-                            
-                            //Copy IDm
-                            memcpy(cmd + 2, idm, 8);
                            
-                            uint16_t sc = 0x000B;
-                            
-                            cmd[10] = 0x01; //count Service Codes
-                            cmd[11] = sc & 0xFF; //Service Code List 1-1
-                            cmd[12] = (sc >> 8) & 0xFF; //Service Code List 1-2
-                            cmd[13] = 0x01; //count Block Codes
-                            cmd[14] = 0x00;
-                            /*
-                             Block List
-                             [長さ(1=2byte,0=1byte 1bit]
-                             [アクセスモード 3bit]
-                             [SERVICEコードリスト順番 4bit]
-                             (0x80 = 2byte, 0x00 = 3byte)
-                             */
-                            
-                            uint16_t adr = 0x1780;
-                            cmd[15] = adr & 0xFF;
-                            cmd[16] = (adr >> 8) & 0xFF;
-                            
-                            int len = packet_write(devinfop, cmd, 17, usbbufp, timeout);
+                            if (get_system) {
+                             
+                                /* 090f */
+                                                                
+                                uint8_t cmd[21] = {
+                                    
+                                    0x04,
+                                    0x86,
+                                    0x01,
+                                    
+                                    0x12,       /* cmd len */
+                                    
+                                    0x06,       /* cmd_code:0x06 (read_without_encryption) */
+                                    idm[0],     /* captured tag identifier (IDm) */
+                                    idm[1],
+                                    idm[2],
+                                    idm[3],
+                                    idm[4],
+                                    idm[5],
+                                    idm[6],
+                                    idm[7],
+                                    0x01, /* count of sc */
+                                    0x0f,
+                                    0x09,
+                                    0x02, /* count of bc */
+                                    
+                                    0x80, //0x11
+                                    0x00,
+                                    
+                                    0x80, //0x12
+                                    0x01
+                                };
+                                                                
+                                packet_inset_rf(devinfop, nfc_type, usbbufp, LIBUSB_API_TIMEOUT);
+                                packet_inset_protocol_1(devinfop, usbbufp, LIBUSB_API_TIMEOUT);
+                                
+                                Json::Value service(Json::objectValue);
 
-                            
+                                service["code"] = "090f";
+                                Json::Value data(Json::arrayValue);
+        
+                                /* not working */
+                                
+                                size_t len;
+                                uint8_t bd[16];
+                                std::string hex;
+                                
+                                for (int i = 0; i < 10; ++i) {
+                                    
+                                    packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
+                                    isPolling = true;
+                                    time_t startTime = time(0);
+                                    time_t anchorTime = startTime;
+                                    while (isPolling) {
+                                        time_t now = time(0);
+                                        time_t elapsedTime = abs(startTime - now);
+                                        elapsedTime = abs(anchorTime - now);
+                                        
+                                        if(elapsedTime < timeout) {
+                                            len = packet_sens_req(devinfop, nfc_type, usbbufp, LIBUSB_API_TIMEOUT_FOR_POLLING);
+                                            if(len >= 0) {
+                                                
+                                                memcpy(bd, &usbbuf[28], 16);
+                                                print_hex(bd, 16, hex);
+                                                data.append(hex);
+                                                
+                                                memcpy(bd, &usbbuf[28+16], 16);
+                                                print_hex(bd, 16, hex);
+                                                data.append(hex);
+                                                
+                                                cmd[18] = cmd[18] + 1;
+                                                cmd[20] = cmd[20] + 1;
+                                                
+                                                isPolling = false;
+                                            }
+                                        }else{
+                                            /* timeout */
+                                            isPolling = false;
+                                        }
+                                    }
+
+                                }
+
+                                service["data"] = data;
+
+                                Json::StreamWriterBuilder writer;
+                                writer["indentation"] = "";
+                                serviceDataJson = Json::writeString(writer, service);
+                            }
+   
                         }
                         // close
                         libusb_release_interface(device, 0);
@@ -1009,6 +1106,12 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
       windows
       
       */
+
+		std::string IDm;
+		std::string PMm;
+
+		bool success = false;
+
         LPTSTR lpszReaderName = NULL;
         CUTF16String name;
         DWORD protocols = SCARD_PROTOCOL_T0|SCARD_PROTOCOL_T1;
@@ -1019,20 +1122,21 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
          TODO: options - set protocol, mode, scope
          
          */
-        CUTF16String name;
         u8_to_u16(slotName, name);
         lpszReaderName = (LPTSTR)name.c_str();
         if(name.length()) {
             SCARDCONTEXT hContext;
             LONG lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
             /* http://eternalwindows.jp/security/scard/scard02.html */
-            if(lResult == SCARD_E_NO_SERVICE) {
-                HANDLE hEvent = SCardAccessStartedEvent();
-                DWORD dwResult = WaitForSingleObject(hEvent, DEFAULT_TIMEOUT_MS_FOR_RESOURCE_MANAGER);
-                if (dwResult == WAIT_OBJECT_0) {
-                    lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
-                }
-                SCardReleaseStartedEvent();
+			if (lResult == SCARD_E_NO_SERVICE) {
+				HANDLE hEvent = SCardAccessStartedEvent();
+				DWORD dwResult = WaitForSingleObject(hEvent, DEFAULT_TIMEOUT_MS_FOR_RESOURCE_MANAGER);
+				if (dwResult == WAIT_OBJECT_0) {
+					lResult = SCardEstablishContext(scope, NULL, NULL, &hContext);
+				}
+				SCardReleaseStartedEvent();
+			}
+
                 if (lResult == SCARD_S_SUCCESS) {
                     SCARD_READERSTATE readerState;
                     readerState.szReader = lpszReaderName;
@@ -1056,7 +1160,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                             if(elapsedTime > 0)
                             {
                                 startTime = now;
-                                PA_YieldAbsolute();
                             }
                             
                             elapsedTime = abs(anchorTime - now);
@@ -1124,22 +1227,46 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                             APDU_LE_MAX_LENGTH
                                         };
 
-                                        BYTE pbRecvBuffer[256];
-                                        DWORD pcbRecvLength = 256;
-                                        DWORD cbRecvLength = 0;
+										BYTE pbSendBuffer_SelectFile[7] = {
+											0xff,
+											0xA4, /* SelectFile */
+											0x00, /* P1 */
+											0x01, /* P2 */
+											0x0f, /* service Hi */
+											0x09, /* service Lo */
+											0x00  
+										};
+
+										BYTE pbSendBuffer_ReadBinary[5] = {
+											0xff,
+											0xb0, /*ReadBinary */
+											0x00,
+											0x00, /* block */
+											0x00
+										};
+
+										if (is_pasori_s380) {
+											pbSendBuffer_SelectFile[4] = 0x02;
+											pbSendBuffer_SelectFile[5] = 0x0f;
+											pbSendBuffer_SelectFile[6] = 0x09;
+										}
+
+                                        BYTE pbRecvBuffer[2048];
+                                        DWORD cbRecvLength;
                                         BYTE SW1 = 0;
                                         BYTE SW2 = 0;
+
+										cbRecvLength = 2048;
                                         lResult = SCardTransmit(hCard,
                                                                 SCARD_PCI_T1,
                                                                 pbSendBuffer_GetIDm,
                                                                 sizeof(pbSendBuffer_GetIDm),
                                                                 NULL,
                                                                 pbRecvBuffer,
-                                                                &pcbRecvLength);
+                                                                &cbRecvLength);
                                         switch(lResult)
                                         {
                                             case SCARD_S_SUCCESS:
-                                                cbRecvLength = *pcbRecvLength;
                                                 SW1 = pbRecvBuffer[cbRecvLength - 2];
                                                 SW2 = pbRecvBuffer[cbRecvLength - 1];
                                                 if ( SW1 != 0x90 || SW2 != 0x00 )
@@ -1151,7 +1278,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                 }
                                                 else
                                                 {
-                                                    IDm = std::string((const char *)pbRecvBuffer, cbRecvLength-2);
+													print_hex(pbRecvBuffer, 8, IDm);
+													success = true;
                                                 }
                                                 break;
                                             case 0x458:
@@ -1163,17 +1291,18 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                             default:
                                                 break;
                                         }
-                                        lResult = SCardTransmit(hCard,
+                                        
+										cbRecvLength = 2048;
+										lResult = SCardTransmit(hCard,
                                                                 SCARD_PCI_T1,
                                                                 pbSendBuffer_GetPMm,
                                                                 sizeof(pbSendBuffer_GetPMm),
                                                                 NULL,
                                                                 pbRecvBuffer,
-                                                                &pcbRecvLength);
+                                                                &cbRecvLength);
                                         switch(lResult)
                                         {
                                             case SCARD_S_SUCCESS:
-                                                cbRecvLength = *pcbRecvLength;
                                                 SW1 = pbRecvBuffer[cbRecvLength - 2];
                                                 SW2 = pbRecvBuffer[cbRecvLength - 1];
                                                 if ( SW1 != 0x90 || SW2 != 0x00 )
@@ -1185,7 +1314,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                 }
                                                 else
                                                 {
-                                                    PMm = std::string((const char *)pbRecvBuffer, cbRecvLength-2);
+													print_hex(pbRecvBuffer, 8, PMm);
+													success = true;
                                                 }
                                                 break;
                                             case 0x458:
@@ -1197,7 +1327,63 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                             default:
                                                 break;
                                         }
-                                    }/* SCardStatus */
+                                   
+										if (get_system) {
+
+												/* 090f */
+
+												Json::Value service(Json::objectValue);
+
+												service["code"] = "090f";
+												Json::Value data(Json::arrayValue);
+
+												for (int i = 0; i < 20; ++i) {
+
+													pbSendBuffer_ReadBinary[3] = i;
+
+													cbRecvLength = 2048;
+													lResult = SCardTransmit(hCard,
+														SCARD_PCI_T1,
+														pbSendBuffer_SelectFile,
+														sizeof(pbSendBuffer_SelectFile),
+														NULL,
+														pbRecvBuffer,
+														&cbRecvLength);
+
+													if (lResult == SCARD_S_SUCCESS) {
+														cbRecvLength = 2048;
+
+														SCARD_IO_REQUEST pci;
+														pci.cbPciLength = cbRecvLength;
+
+														lResult = SCardTransmit(hCard,
+															SCARD_PCI_T1,
+															pbSendBuffer_ReadBinary,
+															sizeof(pbSendBuffer_ReadBinary),
+															&pci,
+															pbRecvBuffer,
+															&cbRecvLength);
+
+														if (lResult == SCARD_S_SUCCESS) {
+															std::string hex;
+															print_hex(pbRecvBuffer, 16, hex);
+															data.append(hex);
+															service["data"] = hex;
+														}
+														else {
+															break;
+														}
+													}
+												}
+
+												service["data"] = data;
+
+												Json::StreamWriterBuilder writer;
+												writer["indentation"] = "";
+												serviceDataJson = Json::writeString(writer, service);
+										}
+									
+									}/* SCardStatus */
                                     SCardDisconnect(hCard, SCARD_LEAVE_CARD);
                                     break;
                                 default:
@@ -1207,7 +1393,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                     }
                     SCardReleaseContext(hContext);
                 }
-            }
         }
 #endif
 

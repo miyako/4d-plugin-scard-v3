@@ -168,10 +168,10 @@
 		"height": 742
 	},
 	"Sources/Methods/TEST_w.4dm": {
-		"left": 397,
-		"top": 307,
+		"left": 804,
+		"top": 148,
 		"width": 936,
-		"height": 742
+		"height": 469
 	},
 	"Sources/Forms/TEST/ObjectMethods/serviceData.4dm": {
 		"left": 734,
@@ -191,15 +191,9 @@
 		"width": 936,
 		"height": 742
 	},
-	"Sources/Methods/reduce_090f.4dm": {
-		"left": 858,
-		"top": 136,
-		"width": 936,
-		"height": 742
-	},
 	"Sources/Methods/parse_090f.4dm": {
-		"left": 1019,
-		"top": 151,
+		"left": 740,
+		"top": 210,
 		"width": 936,
 		"height": 742
 	},
@@ -214,5 +208,17 @@
 		"top": 141,
 		"width": 936,
 		"height": 742
+	},
+	"Trash/Methods/(reduce_090f).4dm": {
+		"left": 945,
+		"top": 321,
+		"width": 936,
+		"height": 742
+	},
+	"Sources/Methods/map_090f.4dm": {
+		"left": 450,
+		"top": 188,
+		"width": 803,
+		"height": 637
 	}
 }

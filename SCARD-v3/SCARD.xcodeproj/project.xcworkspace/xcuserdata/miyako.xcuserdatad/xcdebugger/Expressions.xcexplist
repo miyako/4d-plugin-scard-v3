@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "packet_write(device_info*, unsigned char*, int, std::__1::vector&lt;unsigned char, std::__1::allocator&lt;unsigned char&gt; &gt;*, int):4DPlugin-SCARD.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "packet_send(device_info*, unsigned char*, int, std::__1::vector&lt;unsigned char, std::__1::allocator&lt;unsigned char&gt; &gt;*, int):4DPlugin-SCARD.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "sizeof(rbuf)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "SCARD_Read_tag(PluginBlock*)::$_0::operator()(std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;) const:4DPlugin-SCARD.cpp">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

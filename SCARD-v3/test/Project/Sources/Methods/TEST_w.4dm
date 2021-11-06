@@ -10,9 +10,12 @@ Case of
 		
 		If ($status.success)
 			
-			$names:=New collection:C1472("Sony PaSoRi RC-S330";"Sony PaSoRi RC-S380")  //case sensitive
-			
-			$readers:=$status.readers.query("slotName in :1";$names)
+			If (Is macOS:C1572)
+				$names:=New collection:C1472("Sony PaSoRi RC-S330";"Sony PaSoRi RC-S380")  //case sensitive
+				$readers:=$status.readers.query("slotName in :1";$names)
+			Else 
+				$readers:=$status.readers
+			End if 
 			
 			If ($readers.length#0)
 				
@@ -53,7 +56,7 @@ Case of
 			
 			If ($status.serviceData#Null:C1517)
 				Form:C1466.serviceData:=$status.serviceData
-				Form:C1466.info:=Form:C1466.serviceData.systems.extract("services").reduce("reduce_090f";New collection:C1472)
+				Form:C1466.info:=map_090f (Form:C1466.serviceData.data)
 			End if 
 			
 			$IDm:=String:C10(Form:C1466.IDm)
