@@ -47,3 +47,5 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 * [PaSoRi RC-S380特有の情報](https://tomosoft.jp/design/?p=5543)
 
 * [C#でNFC(Felica/Mifare)の読み取り](https://office-fun.com/techmemo-csharp-nfcreading-practice02/)
+
+* [PC/SCでFelica LiteにC言語でアクセスする](https://qiita.com/gpsnmeajp/items/d4810b175189609494ac)
