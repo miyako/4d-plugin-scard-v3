@@ -40,6 +40,8 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 そしてMacで利用履歴を読む方法がわかりません。[nfcpy](https://nfcpy.readthedocs.io/en/latest/)に[ヒント](https://nfcpy.readthedocs.io/en/latest/modules/clf.html#module-nfc.clf.rcs380)があるようなのですが・・・
 
+**おぼえがき**: nfcpyのパケットログからリバースエンジニアリングすれば良いのでは？
+
 #### 参考記事
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
