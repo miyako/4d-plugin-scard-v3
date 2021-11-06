@@ -27,6 +27,17 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 ![1](https://user-images.githubusercontent.com/1725068/140601288-027c4fe3-d544-43a0-b248-61d61545db6e.png)
 
+---
+
+|  プラッットフォーム  |  機種  | IDm/PMm | 利用履歴 (`090f`) |
+| ---- | ---- | ---- | ---- |
+|  macOS  |  RC-S380  | OK | × |
+|  macOS  |  RC-S330  | OK | OK |
+|  Windows  |  RC-S380 | OK | OK |
+|  Windows  |  RC-S330 | ? | ? |
+
+私の環境ではRC-S330がWindowsで認識されませんでした。
+
 #### 参考記事
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
