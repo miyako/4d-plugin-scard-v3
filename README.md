@@ -38,7 +38,7 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 私の環境ではRC-S330がWindowsで認識されませんでした。
 
-そしてMacで利用履歴を読む方法がわかりません。[nfcpy](https://nfcpy.readthedocs.io/en/latest/)にヒントがあるようなのですが・・・
+そしてMacで利用履歴を読む方法がわかりません。[nfcpy](https://nfcpy.readthedocs.io/en/latest/)に[ヒント](https://nfcpy.readthedocs.io/en/latest/modules/clf.html#module-nfc.clf.rcs380)があるようなのですが・・・
 
 #### 参考記事
 
