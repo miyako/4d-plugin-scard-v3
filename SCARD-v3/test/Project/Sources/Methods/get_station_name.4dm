@@ -1,4 +1,4 @@
-//%attributes = {}
+//%attributes = {"invisible":true}
 C_LONGINT:C283($1;$2;$3)
 C_TEXT:C284($0)
 

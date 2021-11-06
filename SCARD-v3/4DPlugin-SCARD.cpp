@@ -179,6 +179,23 @@ static int packet_init(usb_device_info *devinfo, int timeout) {
   return ret;
 }
 
+static int packet_init_data(usb_device_info *devinfo, int timeout) {
+    
+  uint8_t cmd[2];
+  int ret;
+  int len;
+
+  // data command
+  memcpy(cmd, "\xff\xff", 2);
+      
+  ret = libusb_bulk_transfer(devinfo->dh, devinfo->ep_out,
+                 (unsigned char *)cmd, sizeof(cmd), &len, timeout);
+    
+  if(ret < 0) std::cout << "data send error..." << std::endl;
+    
+  return ret;
+}
+
 static size_t packet_send(usb_device_info *devinfo, uint8_t *buf, int size,
                           std::vector<uint8_t> *usbbuf, int timeout) {
     
@@ -201,8 +218,6 @@ static size_t packet_send(usb_device_info *devinfo, uint8_t *buf, int size,
         std::cout << "data receive error..." << std::endl;
         return 0;
     }
-    //printf("recv <- ");
-    //show_data(rcv, len);
     
     // receive response
     ret = libusb_bulk_transfer(devinfo->dh, devinfo->ep_in,
@@ -234,20 +249,32 @@ static size_t packet_write(usb_device_info *devinfo, uint8_t *buf, int size,
   // data = 0xd6 + data
   // len = len(data)
   // 00 00 ff ff ff len(L) len(H) checksum(len) data checksum(data) 00
-  cmd[0] = 0x00; cmd[1] = 0x00; cmd[2] = 0xff;
-  cmd[3] = 0xff; cmd[4] = 0xff;
-  cmd[5] = ((n + 1) & 0xff) ; cmd[6] = ((n + 1) & 0xff00) >> 8;
-  csum = (0x100 - (cmd[5] + cmd[6])) % 0x100;
-  cmd[7] = csum;
+    
+    /* header */
+    cmd[0] = 0x00; cmd[1] = 0x00; cmd[2] = 0xff;
+    cmd[3] = 0xff; cmd[4] = 0xff;
+    
+    /* data length */
+    cmd[5] = ((n + 1) & 0xff);
+    cmd[6] = ((n + 1) & 0xff00) >> 8;
+    
+    /* checksum */
+    csum = (0x100 - (cmd[5] + cmd[6])) % 0x100;
+    cmd[7] = csum;
+    
+    /* delimiter */
+    cmd[8] = 0xd6;
+    
+    /* data */
+    memcpy(cmd + 9, buf, size);
 
-  cmd[8] = 0xd6;
-  memcpy(cmd + 9, buf, size);
-
-  csum = checksum(cmd[8], buf, size);
-  cmd[9 + n] = csum;
-  
-  cmd[10 + n] = 0x00;
-  n += 11;
+    /* checksum */
+    csum = checksum(cmd[8], buf, size);
+    cmd[9 + n] = csum;
+    
+    /* terminator */
+    cmd[10 + n] = 0x00;
+    n += 11;
   
   return packet_send(devinfo, cmd, n, usbbuf, timeout);
 }
@@ -629,7 +656,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                     if(elapsedTime < timeout) {
                         size_t len = 0L;
                         switch (libusb_device_id) {
-                                
                             case LIBUSB_SONY_RC_S330:
                                 if(p){
                                     f = felica_polling(p, FELICA_POLLING_ANY, 0, 0);
@@ -656,7 +682,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                              https://www.sony.co.jp/Products/felica/business/tech-support/?j-short=tech-support#FeliCa02
                                              https://ja.osdn.net/projects/felicalib/wiki/suica
                                              
-                                             Request System Code コマンドを送信する。FeliCa のもつシステムコードのリストを得る。
+                                             Request System Code コマンドを送信する。FeliCaのもつシステムコードのリストを得る。
                                              https://ja.osdn.net/users/bhbops/pf/libpafe_lite/wiki/FrontPage
                                              
                                              */
@@ -832,6 +858,52 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                         }
                         break;
                     case LIBUSB_SONY_RC_S380:
+                        if(success) {
+                            
+                            unsigned int service_code = 0x090f;
+                            
+                            /*
+                             service code is a 16-bit structure composed of
+                             10-bit service number and a 6-bit service
+                             number, attribute
+                             https://seesaawiki.jp/flashair-dev/d/NFC%3A%B3%AB%C8%AF
+                             */
+                            
+                            uint16_t sc = service_code >> 6;
+                            uint8_t sa = service_code & 0x3f;
+                            uint16_t bc = 0;
+                            
+                            uint8_t cmd[17];
+                            
+                            cmd[0] = 17;//Command Length
+                            cmd[1] = 0x06;//Command (0x06 = Read Without Encryption)
+                            
+                            //Copy IDm
+                            memcpy(cmd + 2, idm, 8);
+                           
+                            uint16_t sc = 0x000B;
+                            
+                            cmd[10] = 0x01; //count Service Codes
+                            cmd[11] = sc & 0xFF; //Service Code List 1-1
+                            cmd[12] = (sc >> 8) & 0xFF; //Service Code List 1-2
+                            cmd[13] = 0x01; //count Block Codes
+                            cmd[14] = 0x00;
+                            /*
+                             Block List
+                             [長さ(1=2byte,0=1byte 1bit]
+                             [アクセスモード 3bit]
+                             [SERVICEコードリスト順番 4bit]
+                             (0x80 = 2byte, 0x00 = 3byte)
+                             */
+                            
+                            uint16_t adr = 0x1780;
+                            cmd[15] = adr & 0xFF;
+                            cmd[16] = (adr >> 8) & 0xFF;
+                            
+                            int len = packet_write(devinfop, cmd, 17, usbbufp, timeout);
+
+                            
+                        }
                         // close
                         libusb_release_interface(device, 0);
                         libusb_close(device);

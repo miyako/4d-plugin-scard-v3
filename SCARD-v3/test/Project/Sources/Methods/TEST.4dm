@@ -1,4 +1,4 @@
-//%attributes = {"invisible":true}
+//%attributes = {}
 /*
 
 the 4D app must have the 
@@ -20,4 +20,15 @@ Sony PaSoRiはUSBダイレクトなので使用できるかもしれません。
 
   //https://jorublog.site/raspi-ic-card-reader-install/
 
+C_OBJECT:C1216($1)
 
+If (Count parameters:C259=0)
+	
+	CALL WORKER:C1389(1;Current method name:C684;New object:C1471)
+	
+Else 
+	
+	$window:=Open form window:C675("TEST")
+	DIALOG:C40("TEST";*)
+	
+End if 

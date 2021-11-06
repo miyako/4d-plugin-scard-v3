@@ -71,6 +71,8 @@ Case of
 				
 			End if 
 			
+			Form:C1466.slotName:=$status.slotName
+			
 		Else 
 			Form:C1466.IDm:=""
 			Form:C1466.serviceData:=Null:C1517

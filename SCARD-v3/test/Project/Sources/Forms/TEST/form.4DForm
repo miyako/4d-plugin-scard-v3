@@ -57,14 +57,15 @@
 				},
 				"timestamp": {
 					"type": "input",
-					"left": 280,
+					"left": 600,
 					"top": 16,
 					"width": 174,
 					"height": 17,
 					"dataSource": "Form:C1466.timestamp",
 					"enterable": false,
 					"contextMenu": "none",
-					"fill": "transparent"
+					"fill": "transparent",
+					"sizingX": "move"
 				},
 				"Info": {
 					"type": "listbox",
@@ -202,10 +203,20 @@
 					"height": 10,
 					"sizingX": "grow",
 					"sizingY": "move"
+				},
+				"slotName": {
+					"type": "input",
+					"left": 280,
+					"top": 16,
+					"width": 214,
+					"height": 17,
+					"dataSource": "Form:C1466.slotName",
+					"enterable": false,
+					"contextMenu": "none"
 				}
 			}
 		}
 	],
-	"geometryStamp": 105,
+	"geometryStamp": 138,
 	"method": "method.4dm"
 }

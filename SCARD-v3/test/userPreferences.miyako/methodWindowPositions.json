@@ -185,19 +185,7 @@
 		"width": 936,
 		"height": 742
 	},
-	"Sources/Methods/TEST_s.4dm": {
-		"left": 681,
-		"top": 141,
-		"width": 936,
-		"height": 742
-	},
 	"Sources/Methods/get_station_name.4dm": {
-		"left": 648,
-		"top": 198,
-		"width": 936,
-		"height": 742
-	},
-	"Sources/Methods/TEST_f.4dm": {
 		"left": 648,
 		"top": 198,
 		"width": 936,
@@ -212,6 +200,18 @@
 	"Sources/Methods/parse_090f.4dm": {
 		"left": 1019,
 		"top": 151,
+		"width": 936,
+		"height": 742
+	},
+	"Trash/Methods/(TEST_f).4dm": {
+		"left": 648,
+		"top": 198,
+		"width": 936,
+		"height": 742
+	},
+	"Trash/Methods/(TEST_s).4dm": {
+		"left": 681,
+		"top": 141,
 		"width": 936,
 		"height": 742
 	}

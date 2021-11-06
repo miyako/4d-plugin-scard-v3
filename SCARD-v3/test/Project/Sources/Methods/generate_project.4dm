@@ -1,4 +1,4 @@
-//%attributes = {}
+//%attributes = {"invisible":true}
 $params:=New object:C1471
 $params.PRODUCT_NAME:="SCARD"
 $params.PRODUCT_VERSION:="3.0.0"
