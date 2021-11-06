@@ -38,6 +38,8 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 私の環境ではRC-S330がWindowsで認識されませんでした。
 
+そしてMacで利用履歴を読む方法がわかりません。[nfcpy](https://nfcpy.readthedocs.io/en/latest/)にヒントがあるようなのですが・・・
+
 #### 参考記事
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
