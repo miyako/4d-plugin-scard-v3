@@ -31,16 +31,12 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 |  プラッットフォーム  |  機種  | IDm/PMm | 利用履歴 (`090f`) |
 | ---- | ---- | ---- | ---- |
-|  macOS  |  RC-S380  | OK | × |
+|  macOS  |  RC-S380  | OK | OK |
 |  macOS  |  RC-S330  | OK | OK |
 |  Windows  |  RC-S380 | OK | OK |
 |  Windows  |  RC-S330 | ? | ? |
 
 私の環境ではRC-S330がWindowsで認識されませんでした。
-
-そしてMacで利用履歴を読む方法がわかりません。[nfcpy](https://nfcpy.readthedocs.io/en/latest/)に[ヒント](https://nfcpy.readthedocs.io/en/latest/modules/clf.html#module-nfc.clf.rcs380)があるようなのですが・・・
-
-**おぼえがき**: nfcpyの[パケット出力](https://www.kenichi-odo.com/articles/2020_10_11_read-suica-by-webusb)からリバースエンジニアリングすれば良いのでは？
 
 #### 参考記事
 
@@ -51,3 +47,5 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 * [C#でNFC(Felica/Mifare)の読み取り](https://office-fun.com/techmemo-csharp-nfcreading-practice02/)
 
 * [PC/SCでFelica LiteにC言語でアクセスする](https://qiita.com/gpsnmeajp/items/d4810b175189609494ac)
+
+* [WebUSB APIでSuicaの履歴を読み取るメモ](https://www.kenichi-odo.com/articles/2020_10_11_read-suica-by-webusb)
