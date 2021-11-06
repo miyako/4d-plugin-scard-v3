@@ -11,6 +11,8 @@
 
 #### SONY PasoRiのデバイス名について
 
+標準APIの代わりにUSBを使用するため，PaSoRiについては独自のデバイス名を返します。
+
 * USBのデバイス名: Sony RC-S380/P
 * `SCardListReaders`のデバイス名 (Windows): Sony FeliCa Port/PaSoRi 3.0 0
 * プラグイン独自のデバイス名 (Mac): Sony PaSoRi RC-S330, Sony PaSoRi RC-S380
