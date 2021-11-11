@@ -508,6 +508,7 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                             case LIBUSB_SONY_RC_S310:
                             case LIBUSB_SONY_RC_S320:
                             case LIBUSB_SONY_RC_S330:
+                            case LIBUSB_SONY_RC_S300:
                                 libusb_device_id = pid;
                                 break;
                             default:
@@ -527,6 +528,9 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                                     break;
                                 case LIBUSB_SONY_RC_S330:
                                     ob_set_s(o, L"slotName", "Sony PaSoRi RC-S330");
+                                    break;
+                                case LIBUSB_SONY_RC_S300:
+                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S300");
                                     break;
                                 default:
                                     break;
@@ -560,7 +564,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
 	char nfc_type = 'F';
 	unsigned int timeout = 60;
 	bool get_system = false;
-	bool get_area = false;
 
 	if (args) {
 		CUTF8String stringValue;
@@ -619,7 +622,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
         char nfc_type = 'F';
         unsigned int timeout = 60;
         bool get_system = false;
-        bool get_area = false;
         
         if(1) {
             std::lock_guard<std::mutex> lock(scardMutex);
@@ -658,12 +660,13 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
         
         int libusb_device_id = 0;
         
-        if(slotName == "Sony PaSoRi RC-S380") {
+        if(slotName == "Sony PaSoRi RC-S380"){
             libusb_device_id = LIBUSB_SONY_RC_S380;
-        }else
-        if(    (slotName == "Sony PaSoRi RC-S310")
-            || (slotName == "Sony PaSoRi RC-S320")
-            || (slotName == "Sony PaSoRi RC-S330")){
+        }else if(slotName == "Sony PaSoRi RC-S300"){
+            libusb_device_id = LIBUSB_SONY_RC_S300;
+        }else if(   (slotName == "Sony PaSoRi RC-S310")
+                 || (slotName == "Sony PaSoRi RC-S320")
+                 || (slotName == "Sony PaSoRi RC-S330")){
             libusb_device_id = LIBUSB_SONY_RC_S330;
         }
         
@@ -684,12 +687,12 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             
             switch (libusb_device_id) {
                 case LIBUSB_SONY_RC_S330:
+                case LIBUSB_SONY_RC_S300:
                     p = pasori_open();
                     if(p) {
                         if(!pasori_init(p)) {
                             pasori_set_timeout(p, LIBUSB_API_TIMEOUT);
                             pasori_reset(p);
-//                            pasori_test_polling(p);
                             isPolling = true;
                         }
                     }
@@ -697,7 +700,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 case LIBUSB_SONY_RC_S380:
                     int libusb_result = libusb_init(NULL);
                     if(libusb_result >= 0) {
-                        device = libusb_open_device_with_vid_pid(NULL, 0x054C, 0x06C3);
+                        device = libusb_open_device_with_vid_pid(NULL, LIBUSB_SONY, libusb_device_id);
                         if(device) {
                             // usb interface setting
                             libusb_set_auto_detach_kernel_driver(device, 1);
@@ -735,6 +738,9 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                     if(elapsedTime < timeout) {
                         size_t len = 0L;
                         switch (libusb_device_id) {
+                            case LIBUSB_SONY_RC_S300:
+                                
+                                break;
                             case LIBUSB_SONY_RC_S330:
                                 if(p){
                                     f = felica_polling(p, FELICA_POLLING_ANY, 0, 0);
@@ -898,7 +904,9 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 }
              
                 switch (libusb_device_id) {
+                    case LIBUSB_SONY_RC_S300:
                         
+                        break;
                     case LIBUSB_SONY_RC_S330:
                         if(f) {
                             free(f);
@@ -950,16 +958,15 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
 
                                 service["code"] = "090f";
                                 Json::Value data(Json::arrayValue);
-        
-                                /* not working */
-                                
+                                        
                                 size_t len;
                                 uint8_t bd[16];
                                 std::string hex;
                                 
-                                for (int i = 0; i < 10; ++i) {
+//                                for (int i = 0; i < 10; ++i) {
                                     
                                     packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
+                                    
                                     isPolling = true;
                                     time_t startTime = time(0);
                                     time_t anchorTime = startTime;
@@ -971,19 +978,35 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                         if(elapsedTime < timeout) {
                                             len = packet_sens_req(devinfop, nfc_type, usbbufp, LIBUSB_API_TIMEOUT_FOR_POLLING);
                                             if(len >= 0) {
-                                                
-                                                memcpy(bd, &usbbuf[28], 16);
-                                                print_hex(bd, 16, hex);
-                                                data.append(hex);
-                                                
-                                                memcpy(bd, &usbbuf[28+16], 16);
-                                                print_hex(bd, 16, hex);
-                                                data.append(hex);
-                                                
-                                                cmd[18] = cmd[18] + 1;
-                                                cmd[20] = cmd[20] + 1;
-                                                
-                                                isPolling = false;
+                                                if(usbbuf[9] == 0x05 && usbbuf[10] == 0x00) {
+                                                    int rlen = ((usbbuf[6] << 8) + usbbuf[5]);
+                                                    switch (rlen) {
+                                                        case 52:
+                                                            
+                                                            memcpy(bd, &usbbuf[28], 16);
+                                                            print_hex(bd, 16, hex);
+                                                            data.append(hex);
+                                                            
+                                                            memcpy(bd, &usbbuf[28+16], 16);
+                                                            print_hex(bd, 16, hex);
+                                                            data.append(hex);
+                                                            
+                                                            cmd[18] = cmd[18] + 2;
+                                                            cmd[20] = cmd[20] + 2;
+
+                                                            break;
+                                                        default:
+                                                            break;
+                                                    }
+                                                    
+//                                                    NSLog(@"rlen:%d, cmd[20]:%d",rlen, cmd[20]);
+                                                    
+                                                    if(cmd[20] == 19){
+                                                        isPolling = false;
+                                                    }else{
+                                                        packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
+                                                    }
+                                                }
                                             }
                                         }else{
                                             /* timeout */
@@ -991,7 +1014,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                         }
                                     }
 
-                                }
+//                                }
 
                                 service["data"] = data;
 

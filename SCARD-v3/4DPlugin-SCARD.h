@@ -31,6 +31,7 @@
 #define LIBUSB_SONY_RC_S330 0x02E1
 #define LIBUSB_SONY_RC_S320 0x01BB
 #define LIBUSB_SONY_RC_S310 0x006C
+#define LIBUSB_SONY_RC_S300 0x0DC9
 struct device_info {
   libusb_device *dev;
   libusb_device_handle *dh;

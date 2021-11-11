@@ -2,3 +2,4 @@ SCARD-v3/test/userPreferences.*
 SCARD-v3/test/Data/*
 SCARD-v3/build/SCARD.build*
 SCARD-v3/build/XCBuildData/*
+SCARD-v3/test/userPreferences.*
