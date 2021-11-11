@@ -12,9 +12,9 @@
 
 * SONY PaSoRi RC-S310,RC-S320, RC-S330 (RC-S360, RC-S370): [libpafe](https://github.com/rfujita/libpafe)+libusbで対応
 * SONY PaSoRi [RC-S380](https://www.sony.co.jp/Products/felica/consumer/support/faq/detail/253.html): [libusb](https://github.com/libusb/libusb)で対応
-* SONY PaSoRi RC-S300 11月11日発売予定: TKSmartCardSlotManagerで対応予定
+* SONY PaSoRi RC-S300 ~~11月11日発売予定~~
 
-SONY PaSoRi RC-S300が届きました。`TKSmartCardSlotManager`ではなく，これまでどおりUSBで通信しなければならないようです😭
+SONY PaSoRi RC-S300が届きました。
 
 #### SONY PaSoRiのデバイス名について
 
@@ -22,7 +22,7 @@ SONY PaSoRi RC-S300が届きました。`TKSmartCardSlotManager`ではなく，�
 
 * USBのデバイス名: Sony RC-S380/P（個人用）, Sony RC-S380/S（業務用）
 * `SCardListReaders`のデバイス名 (Windows): Sony FeliCa Port/PaSoRi 3.0 0
-* プラグイン独自のデバイス名 (Mac): Sony PaSoRi RC-S330, Sony PaSoRi RC-S380
+* プラグイン独自のデバイス名 (Mac): Sony FeliCa RC-S330, Sony FeliCa RC-S380
 
 ---
 
@@ -38,7 +38,7 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 |  プラッットフォーム  |  機種  | IDm/PMm | 利用履歴 (`090f`) |
 | ---- | ---- | ---- | ---- |
-|  macOS  |  RC-S300  | × | × |
+|  macOS  |  RC-S300  | OK | OK |
 |  macOS  |  RC-S380  | OK | OK |
 |  macOS  |  RC-S330  | OK | OK |
 |  Windows  |  RC-S380 | OK | OK |
