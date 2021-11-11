@@ -22,10 +22,11 @@
 /* libusb */
 #define LIBUSB_DATASIZE 255
 
-#define TK_USLEEP_DURATION 25000  //microseconds
+#define TK_USLEEP_DURATION_FOR_POLLING 25000  //microseconds
+#define TK_USLEEP_DURATION 2500  //microseconds
 #define LIBUSB_USLEEP_DURATION 250000 //microseconds
 #define LIBUSB_API_TIMEOUT 2000  //milliseconds
-#define LIBUSB_API_TIMEOUT_FOR_POLLING 500 //milliseconds
+#define LIBUSB_API_TIMEOUT_FOR_POLLING 25000 //milliseconds
 #define LIBUSB_MAX_STRING_LENGTH 512
 #define LIBUSB_SONY_RC_S380 0x06C3
 /* SONY PaSoRi */

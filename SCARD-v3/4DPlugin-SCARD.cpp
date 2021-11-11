@@ -843,11 +843,18 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                         int rlen = ((usbbuf[6] << 8) + usbbuf[5]);
                                         if(rlen == 27) {
                                             if(usbbuf[6 + 9] == 0x14 && usbbuf[7 + 9] == 0x01) {
-                                                memcpy(idm, &usbbuf[ 8 + 9], 8);
-                                                memcpy(pmm, &usbbuf[16 + 9], 8);
-                                                print_hex(idm, 8, IDm);
-                                                print_hex(pmm, 8, PMm);
-                                                success = true;
+                                                
+                                                uint8_t SW1 = usbbuf[25];
+                                                uint8_t SW2 = usbbuf[26];
+                                                
+                                                if((SW1 == 0x10) & (SW2 == 0x0B)){
+                                                    memcpy(idm, &usbbuf[ 8 + 9], 8);
+                                                    memcpy(pmm, &usbbuf[16 + 9], 8);
+                                                    print_hex(idm, 8, IDm);
+                                                    print_hex(pmm, 8, PMm);
+                                                    success = true;
+                                                }
+                                                
                                                 isPolling = false;
                                             }
                                         }
@@ -980,6 +987,10 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                         cmd[20] = cmd[20] + 2;
                                                         
                                                         break;
+                                                        
+                                                    case 27:
+                                                        NSLog(@"error");
+                                                        break;
                                                     default:
                                                         break;
                                                 }
@@ -1107,9 +1118,9 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                         APDU_INS_SELECT_FILE, /* SelectFile */
                                                         0x00, /* P1 */
                                                         0x01, /* P2 */
-                                                        0x0f,//0x02,
-                                                        0x09,//0x0f, /* service Hi */
-                                                        0x00//0x09 /* service Lo */
+                                                        0x02,
+                                                        0x0f, /* service Hi */
+                                                        0x09 /* service Lo */
                                                     };
                                                     
                                                     __block int cnt = 0;
@@ -1124,8 +1135,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                             if (error == nil)
                                                             {
                                                                 uint8_t pbSendBuffer_ReadBinary[5] = {
-                                                                    0xff,
-                                                                    0xb0, /*ReadBinary */
+                                                                    APDU_CLA_GENERIC,
+                                                                    APDU_INS_READ_BINARY, /*ReadBinary */
                                                                     0x00,
                                                                     0x00, /* block */
                                                                     0x00
@@ -1141,11 +1152,13 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                                     
                                                                     if (error == nil)
                                                                     {
-                                                                        if([response length] == 16) {
+                                                                        if([response length] == 18) {
                                                                             std::string hex;
                                                                             print_hex((const uint8_t *)[response bytes], 16, hex);
                                                                             data.append(hex);
                                                                         }
+                                                                    }else{
+                                                                        NSLog(@"transmitRequest(READ BINARY) error!");
                                                                     }
                                                                     
                                                                     cnt++;
@@ -1163,7 +1176,9 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                                     }
           
                                                                 }];
-                                                                usleep(TK_USLEEP_DURATION);
+                                                                usleep(TK_USLEEP_DURATION_FOR_POLLING);
+                                                            }else{
+                                                                NSLog(@"transmitRequest(SELECT FILE) error!");
                                                             }
                                                             
                                                         }];
@@ -1721,9 +1736,3 @@ static void u8_to_u16(std::string& u8, CUTF16String& u16) {
     }
 #endif
 }
-
-/*
- 
- https://qiita.com/YasuakiNakazawa/items/3109df682af2a7032f8d
- 
- */
