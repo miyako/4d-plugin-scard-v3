@@ -43,6 +43,9 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 私の環境ではRC-S330がWindowsで認識されませんでした。
 
+* macOS USB-C Digital AV MultiportアダプタとRC-S380の組み合わせでは利用履歴の取得に失敗しました。
+* macOS USB-C USBアダプタでは問題ないようです。
+
 #### 参考記事
 
 * [プロデルで交通系ICカード履歴ビューアを作る](https://wp.utopiat.net/2017/08/305/)
