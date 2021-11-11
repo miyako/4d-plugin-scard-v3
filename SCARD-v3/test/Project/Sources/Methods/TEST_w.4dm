@@ -11,8 +11,7 @@ Case of
 		If ($status.success)
 			
 			If (Is macOS:C1572)
-				$names:=New collection:C1472("Sony PaSoRi RC-S300";"Sony PaSoRi RC-S330";"Sony PaSoRi RC-S380")  //case sensitive
-				$readers:=$status.readers.query("slotName in :1";$names)
+				$readers:=$status.readers.query("slotName == :1";"Sony FeliCa RC-S3@")
 			Else 
 				$readers:=$status.readers
 			End if 

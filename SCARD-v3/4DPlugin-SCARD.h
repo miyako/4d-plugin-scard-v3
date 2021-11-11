@@ -21,6 +21,8 @@
 #include "libusb-1.0/libusb.h"
 /* libusb */
 #define LIBUSB_DATASIZE 255
+
+#define TK_USLEEP_DURATION 25000  //microseconds
 #define LIBUSB_USLEEP_DURATION 250000 //microseconds
 #define LIBUSB_API_TIMEOUT 2000  //milliseconds
 #define LIBUSB_API_TIMEOUT_FOR_POLLING 500 //milliseconds

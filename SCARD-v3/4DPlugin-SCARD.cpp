@@ -508,7 +508,6 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                             case LIBUSB_SONY_RC_S310:
                             case LIBUSB_SONY_RC_S320:
                             case LIBUSB_SONY_RC_S330:
-                            case LIBUSB_SONY_RC_S300:
                                 libusb_device_id = pid;
                                 break;
                             default:
@@ -518,19 +517,16 @@ static void SCARD_Get_readers(PA_PluginParameters params) {
                             PA_ObjectRef o = PA_CreateObject();
                             switch (libusb_device_id) {
                                 case LIBUSB_SONY_RC_S380:
-                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S380");
+                                    ob_set_s(o, L"slotName", "Sony FeliCa RC-S380");
                                     break;
                                 case LIBUSB_SONY_RC_S310:
-                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S310");
+                                    ob_set_s(o, L"slotName", "Sony FeliCa RC-S310");
                                     break;
                                 case LIBUSB_SONY_RC_S320:
-                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S320");
+                                    ob_set_s(o, L"slotName", "Sony FeliCa RC-S320");
                                     break;
                                 case LIBUSB_SONY_RC_S330:
-                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S330");
-                                    break;
-                                case LIBUSB_SONY_RC_S300:
-                                    ob_set_s(o, L"slotName", "Sony PaSoRi RC-S300");
+                                    ob_set_s(o, L"slotName", "Sony FeliCa RC-S330");
                                     break;
                                 default:
                                     break;
@@ -636,7 +632,7 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
 		bool is_pasori_s380 = false;
 
 		if ((slotName == "Sony FeliCa Port/PaSoRi 3.0 0")
-			|| (slotName == "Sony PaSoRi RC-S380")
+			|| (slotName == "Sony FeliCa RC-S380")
 			|| (slotName == "Sony RC-S380/P")
 			|| (slotName == "Sony RC-S380/S")
 			) {
@@ -644,7 +640,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
 		}
 
         std::string errorMessage;
-        std::string serviceDataJson;
         
 #if VERSIONMAC
 
@@ -655,18 +650,17 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
         __block std::string appdata;
         __block std::string pinfo;
         __block std::string cid;
+        __block std::string serviceDataJson;
         
         std::vector<uint8_t>usbbuf(LIBUSB_DATASIZE);
         
         int libusb_device_id = 0;
         
-        if(slotName == "Sony PaSoRi RC-S380"){
+        if(slotName == "Sony FeliCa RC-S380"){
             libusb_device_id = LIBUSB_SONY_RC_S380;
-        }else if(slotName == "Sony PaSoRi RC-S300"){
-            libusb_device_id = LIBUSB_SONY_RC_S300;
-        }else if(   (slotName == "Sony PaSoRi RC-S310")
-                 || (slotName == "Sony PaSoRi RC-S320")
-                 || (slotName == "Sony PaSoRi RC-S330")){
+        }else if(   (slotName == "Sony FeliCa RC-S310")
+                 || (slotName == "Sony FeliCa RC-S320")
+                 || (slotName == "Sony FeliCa RC-S330")){
             libusb_device_id = LIBUSB_SONY_RC_S330;
         }
         
@@ -687,7 +681,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
             
             switch (libusb_device_id) {
                 case LIBUSB_SONY_RC_S330:
-                case LIBUSB_SONY_RC_S300:
                     p = pasori_open();
                     if(p) {
                         if(!pasori_init(p)) {
@@ -738,9 +731,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                     if(elapsedTime < timeout) {
                         size_t len = 0L;
                         switch (libusb_device_id) {
-                            case LIBUSB_SONY_RC_S300:
-                                
-                                break;
                             case LIBUSB_SONY_RC_S330:
                                 if(p){
                                     f = felica_polling(p, FELICA_POLLING_ANY, 0, 0);
@@ -904,9 +894,6 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 }
              
                 switch (libusb_device_id) {
-                    case LIBUSB_SONY_RC_S300:
-                        
-                        break;
                     case LIBUSB_SONY_RC_S330:
                         if(f) {
                             free(f);
@@ -1041,77 +1028,178 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                 if(slot) {
                     TKSmartCard *smartCard = [slot makeSmartCard];
                     if(smartCard) {
+                        dispatch_semaphore_t sem = dispatch_semaphore_create(0);
                         [smartCard beginSessionWithReply:^(BOOL _success, NSError *error) {
+                            
                             if (_success) {
-                                
-                                sleep(1);
-                                
-                                smartCard.cla = APDU_CLA_GENERIC;/*FF*/
-                                NSNumber *le = @0;//to get as much bytes as card provides
-                                uint8_t aid[] = {};
-                                NSData *data = [NSData dataWithBytes:aid length:sizeof aid];
-                                
-                                UInt16 sw = 0;
-                                unsigned char SW1 = 0;
-                                unsigned char SW2 = 0;
-                                
-                                NSData *response;
-                                response = [smartCard sendIns:APDU_INS_GET_DATA/*CA*/
-                                                           p1:APDU_P1_GET_UID/*00*/
-                                                           p2:APDU_P2_NONE/*00*/
-                                                         data:data
-                                                           le:le/*00*/
-                                                           sw:&sw
-                                                        error:&error];
-                                if (error == nil)
-                                {
-        
-                                    SW1 = sw >> 8;
-                                    SW2 = sw & 0x00FF;
+
+                                uint8_t pbSendBuffer_GetIDm[5] = {
+                                    APDU_CLA_GENERIC,
+                                    APDU_INS_GET_DATA,
+                                    APDU_P1_GET_UID,
+                                    APDU_P2_NONE,
+                                    APDU_LE_MAX_LENGTH
+                                };
+                               
+                                [smartCard
+                                 transmitRequest:[NSData dataWithBytes:pbSendBuffer_GetIDm
+                                                                length:sizeof pbSendBuffer_GetIDm]
+                                                                 reply:^(NSData *response, NSError *error) {
                                     
-                                    if ( SW1 != 0x90 || SW2 != 0x00 )
+                                    if (error == nil)
                                     {
-                                        if ( SW1 == 0x63 && SW2 == 0x00 )
+                                        uint8_t SW1 = 0;
+                                        uint8_t SW2 = 0;
+                                        [response getBytes:&SW1 range:NSMakeRange([response length] - 2, 1)];
+                                        [response getBytes:&SW2 range:NSMakeRange([response length] - 1, 1)];
+                                        if ( SW1 != 0x90 || SW2 != 0x00 )
                                         {
-                                            /* data is not available */
+                                            if ( SW1 == 0x63 && SW2 == 0x00 )
+                                            {
+                                                /* data is not available */
+                                            }
                                         }
-                                    }
-                                    else{
-                                        print_hex((const uint8_t *)[response bytes], 8, IDm);
-                                    }
-                                }
-                                
-                                response = [smartCard sendIns:APDU_INS_GET_DATA/*CA*/
-                                                           p1:APDU_P1_GET_PMm/*01*/
-                                                           p2:APDU_P2_NONE/*00*/
-                                                         data:data
-                                                           le:le/*00*/
-                                                           sw:&sw
-                                                        error:&error];
-                                if (error == nil)
-                                {
-        
-                                    SW1 = sw >> 8;
-                                    SW2 = sw & 0x00FF;
-                                    
-                                    if ( SW1 != 0x90 || SW2 != 0x00 )
-                                    {
-                                        if ( SW1 == 0x63 && SW2 == 0x00 )
+                                        else
                                         {
-                                            /* data is not available */
+                                            print_hex((const uint8_t *)[response bytes], 8, IDm);
+                                            success = true;
                                         }
+                                        
+                                        uint8_t pbSendBuffer_GetPMm[5] = {
+                                            APDU_CLA_GENERIC,
+                                            APDU_INS_GET_DATA,
+                                            APDU_P1_GET_PMm,
+                                            APDU_P2_NONE,
+                                            APDU_LE_MAX_LENGTH
+                                        };
+                                        
+                                        [smartCard
+                                         transmitRequest:[NSData dataWithBytes:pbSendBuffer_GetPMm
+                                                                        length:sizeof pbSendBuffer_GetPMm]
+                                                                         reply:^(NSData *response, NSError *error) {
+                                            
+                                            if (error == nil)
+                                            {
+                                                uint8_t SW1 = 0;
+                                                uint8_t SW2 = 0;
+                                                [response getBytes:&SW1 range:NSMakeRange([response length] - 2, 1)];
+                                                [response getBytes:&SW2 range:NSMakeRange([response length] - 1, 1)];
+                                                if ( SW1 != 0x90 || SW2 != 0x00 )
+                                                {
+                                                    if ( SW1 == 0x63 && SW2 == 0x00 )
+                                                    {
+                                                        /* data is not available */
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    print_hex((const uint8_t *)[response bytes], 8, PMm);
+                                                    success = true;
+                                                }
+                                                
+                                                if (get_system) {
+
+                                                        /* 090f */
+                                                    
+                                                    __block Json::Value service(Json::objectValue);
+
+                                                    service["code"] = "090f";
+                                                    __block Json::Value data(Json::arrayValue);
+                                                    
+                                                    smartCard.cla = 0xFF;
+                                                                                                        
+                                                    uint8_t pbSendBuffer_SelectFile[7] = {
+                                                        APDU_CLA_GENERIC,
+                                                        APDU_INS_SELECT_FILE, /* SelectFile */
+                                                        0x00, /* P1 */
+                                                        0x01, /* P2 */
+                                                        0x0f,//0x02,
+                                                        0x09,//0x0f, /* service Hi */
+                                                        0x00//0x09 /* service Lo */
+                                                    };
+                                                    
+                                                    __block int cnt = 0;
+                                                    
+                                                    for (int i = 0; i < 20; ++i) {
+                                                                                                                
+                                                        [smartCard
+                                                         transmitRequest:[NSData dataWithBytes:pbSendBuffer_SelectFile
+                                                                                        length:sizeof(pbSendBuffer_SelectFile)]
+                                                         reply:^(NSData *response, NSError *error) {
+                                                            
+                                                            if (error == nil)
+                                                            {
+                                                                uint8_t pbSendBuffer_ReadBinary[5] = {
+                                                                    0xff,
+                                                                    0xb0, /*ReadBinary */
+                                                                    0x00,
+                                                                    0x00, /* block */
+                                                                    0x00
+                                                                };
+                                                                
+                                                                pbSendBuffer_ReadBinary[3] = i;
+                                                                
+                                                                [smartCard
+                                                                 transmitRequest:[NSData dataWithBytes:pbSendBuffer_ReadBinary
+                                                                                                length:sizeof(pbSendBuffer_ReadBinary)]
+                                                                 reply:^(NSData *response, NSError *error) {
+                                                                    
+                                                                    
+                                                                    if (error == nil)
+                                                                    {
+                                                                        std::string hex;
+                                                                        print_hex((const uint8_t *)[response bytes], 16, hex);
+                                                                        data.append(hex);
+                                                                    }
+                                                                    
+                                                                    cnt++;
+                                                                    
+                                                                    if(cnt == 19){
+                                                                        [smartCard endSession];
+                                                                        
+                                                                        service["data"] = data;
+                                                                        
+                                                                        Json::StreamWriterBuilder writer;
+                                                                        writer["indentation"] = "";
+                                                                        serviceDataJson = Json::writeString(writer, service);
+                                                                        
+                                                                        dispatch_semaphore_signal(sem);
+                                                                    }
+          
+                                                                }];
+                                                                usleep(TK_USLEEP_DURATION);
+                                                            }
+                                                            
+                                                        }];
+                                                        usleep(TK_USLEEP_DURATION);
+                                                    }
+
+                                                }else{
+                                                    //!get_system
+                                                    [smartCard endSession];
+                                                    dispatch_semaphore_signal(sem);
+                                                }
+                                            }else{
+                                                //transmitRequest(pbSendBuffer_GetPMm)failed
+                                                [smartCard endSession];
+                                                dispatch_semaphore_signal(sem);
+                                            }
+                                        }];
+                                    }else{
+                                        //transmitRequest(pbSendBuffer_GetIDm)failed
+                                        [smartCard endSession];
+                                        dispatch_semaphore_signal(sem);
                                     }
-                                    else{
-                                        print_hex((const uint8_t *)[response bytes], 8, PMm);
-                                    }
-                                }
-                                
-                                if((IDm.length() != 0) && (PMm.length() != 0)) success = true;
-                                
+                                }];
+
+                            }else{
+                               //beginSessionWithReply() failed
+                                dispatch_semaphore_signal(sem);
                             }
                             
                         }];
-                        sleep(1);
+                        // wait for the asynchronous blocks to finish
+                        dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
                     }else{
                         errorMessage = "TKSmartCard::makeSmartCard() failed";
                     }
@@ -1130,6 +1218,8 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
       
       */
 
+        std::string serviceDataJson;
+        
 		std::string IDm;
 		std::string PMm;
 
