@@ -14,13 +14,7 @@
 * SONY PaSoRi [RC-S380](https://www.sony.co.jp/Products/felica/consumer/support/faq/detail/253.html): [libusb](https://github.com/libusb/libusb)で対応
 * SONY PaSoRi RC-S300 11月11日発売予定: TKSmartCardSlotManagerで対応予定
 
-#### USBアダプタについて
-
-USB-C **Digital AV Multiportアダプタ**では利用履歴の取得に失敗します。USB-C USBアダプタを使用する必要があります。
-
-![MUF82](https://user-images.githubusercontent.com/1725068/141243806-b178c192-20ec-4b88-be6c-b7936cf107eb.jpeg)
-![MJ1M2-1](https://user-images.githubusercontent.com/1725068/141243852-29910e55-ed5a-4ac7-af02-798289fc725e.jpeg)
-
+SONY PaSoRi RC-S300が届きました。`TKSmartCardSlotManager`ではなく，これまでどおりUSBで通信しなければならないようです😭
 
 #### SONY PasoRiのデバイス名について
 
@@ -44,6 +38,7 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 |  プラッットフォーム  |  機種  | IDm/PMm | 利用履歴 (`090f`) |
 | ---- | ---- | ---- | ---- |
+|  macOS  |  RC-S300  | × | × |
 |  macOS  |  RC-S380  | OK | OK |
 |  macOS  |  RC-S330  | OK | OK |
 |  Windows  |  RC-S380 | OK | OK |
