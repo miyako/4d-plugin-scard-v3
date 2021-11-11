@@ -38,7 +38,7 @@ RC-S380の独自プロトコルに対応していますが，リーダーはVID/
 
 |  プラッットフォーム  |  機種  | IDm/PMm | 利用履歴 (`090f`) |
 | ---- | ---- | ---- | ---- |
-|  macOS  |  RC-S300  | × | × |
+|  macOS  |  RC-S300  | OK | OK |
 |  macOS  |  RC-S380  | OK | OK |
 |  macOS  |  RC-S330  | OK | OK |
 |  Windows  |  RC-S380 | OK | OK |
