@@ -16,7 +16,7 @@
 
 SONY PaSoRi RC-S300が届きました。`TKSmartCardSlotManager`ではなく，これまでどおりUSBで通信しなければならないようです😭
 
-#### SONY PasoRiのデバイス名について
+#### SONY PaSoRiのデバイス名について
 
 標準APIの代わりにUSBを使用するため，PaSoRiについては独自のデバイス名を返します。
 
