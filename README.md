@@ -16,7 +16,11 @@
 
 #### USBアダプタについて
 
-MacでRC-S380を使用する場合，USB-C **Digital AV Multiportアダプタ**では利用履歴の取得に失敗します。USB-C USBアダプタを使用する必要があります。
+USB-C **Digital AV Multiportアダプタ**では利用履歴の取得に失敗します。USB-C USBアダプタを使用する必要があります。
+
+![MUF82](https://user-images.githubusercontent.com/1725068/141243806-b178c192-20ec-4b88-be6c-b7936cf107eb.jpeg)
+
+![MUF82](https://user-images.githubusercontent.com/1725068/141243817-4cb5ac66-36a1-4a15-9852-6214abe9262a.jpeg)
 
 #### SONY PasoRiのデバイス名について
 
