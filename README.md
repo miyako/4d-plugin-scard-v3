@@ -19,8 +19,8 @@
 USB-C **Digital AV Multiportアダプタ**では利用履歴の取得に失敗します。USB-C USBアダプタを使用する必要があります。
 
 ![MUF82](https://user-images.githubusercontent.com/1725068/141243806-b178c192-20ec-4b88-be6c-b7936cf107eb.jpeg)
+![MJ1M2-1](https://user-images.githubusercontent.com/1725068/141243852-29910e55-ed5a-4ac7-af02-798289fc725e.jpeg)
 
-![MUF82](https://user-images.githubusercontent.com/1725068/141243817-4cb5ac66-36a1-4a15-9852-6214abe9262a.jpeg)
 
 #### SONY PasoRiのデバイス名について
 
