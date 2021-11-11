@@ -950,58 +950,52 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                 uint8_t bd[16];
                                 std::string hex;
                                 
-//                                for (int i = 0; i < 10; ++i) {
+                                packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
+                                
+                                isPolling = true;
+                                time_t startTime = time(0);
+                                time_t anchorTime = startTime;
+                                while (isPolling) {
+                                    time_t now = time(0);
+                                    time_t elapsedTime = abs(startTime - now);
+                                    elapsedTime = abs(anchorTime - now);
                                     
-                                    packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
-                                    
-                                    isPolling = true;
-                                    time_t startTime = time(0);
-                                    time_t anchorTime = startTime;
-                                    while (isPolling) {
-                                        time_t now = time(0);
-                                        time_t elapsedTime = abs(startTime - now);
-                                        elapsedTime = abs(anchorTime - now);
-                                        
-                                        if(elapsedTime < timeout) {
-                                            len = packet_sens_req(devinfop, nfc_type, usbbufp, LIBUSB_API_TIMEOUT_FOR_POLLING);
-                                            if(len >= 0) {
-                                                if(usbbuf[9] == 0x05 && usbbuf[10] == 0x00) {
-                                                    int rlen = ((usbbuf[6] << 8) + usbbuf[5]);
-                                                    switch (rlen) {
-                                                        case 52:
-                                                            
-                                                            memcpy(bd, &usbbuf[28], 16);
-                                                            print_hex(bd, 16, hex);
-                                                            data.append(hex);
-                                                            
-                                                            memcpy(bd, &usbbuf[28+16], 16);
-                                                            print_hex(bd, 16, hex);
-                                                            data.append(hex);
-                                                            
-                                                            cmd[18] = cmd[18] + 2;
-                                                            cmd[20] = cmd[20] + 2;
-
-                                                            break;
-                                                        default:
-                                                            break;
-                                                    }
-                                                    
-//                                                    NSLog(@"rlen:%d, cmd[20]:%d",rlen, cmd[20]);
-                                                    
-                                                    if(cmd[20] == 19){
-                                                        isPolling = false;
-                                                    }else{
-                                                        packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
-                                                    }
+                                    if(elapsedTime < timeout) {
+                                        len = packet_sens_req(devinfop, nfc_type, usbbufp, LIBUSB_API_TIMEOUT_FOR_POLLING);
+                                        if(len >= 0) {
+                                            if(usbbuf[9] == 0x05 && usbbuf[10] == 0x00) {
+                                                int rlen = ((usbbuf[6] << 8) + usbbuf[5]);
+                                                switch (rlen) {
+                                                    case 52:
+                                                        
+                                                        memcpy(bd, &usbbuf[28], 16);
+                                                        print_hex(bd, 16, hex);
+                                                        data.append(hex);
+                                                        
+                                                        memcpy(bd, &usbbuf[28+16], 16);
+                                                        print_hex(bd, 16, hex);
+                                                        data.append(hex);
+                                                        
+                                                        cmd[18] = cmd[18] + 2;
+                                                        cmd[20] = cmd[20] + 2;
+                                                        
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+                                                                                                
+                                                if(cmd[20] == 19){
+                                                    isPolling = false;
+                                                }else{
+                                                    packet_write(devinfop, cmd, sizeof(cmd), usbbufp, timeout);//InCommRF
                                                 }
                                             }
-                                        }else{
-                                            /* timeout */
-                                            isPolling = false;
                                         }
+                                    }else{
+                                        /* timeout */
+                                        isPolling = false;
                                     }
-
-//                                }
+                                }
 
                                 service["data"] = data;
 
@@ -1147,9 +1141,11 @@ static void SCARD_Read_tag(PA_PluginParameters params) {
                                                                     
                                                                     if (error == nil)
                                                                     {
-                                                                        std::string hex;
-                                                                        print_hex((const uint8_t *)[response bytes], 16, hex);
-                                                                        data.append(hex);
+                                                                        if([response length] == 16) {
+                                                                            std::string hex;
+                                                                            print_hex((const uint8_t *)[response bytes], 16, hex);
+                                                                            data.append(hex);
+                                                                        }
                                                                     }
                                                                     
                                                                     cnt++;
