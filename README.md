@@ -16,6 +16,8 @@
 
 SONY PaSoRi RC-S300が届きました。
 
+USB-C Digital AV MultiportアダプタでMacにRC-S380を接続した場合，IDm/PMmは取得できますが，利用履歴 (`090f`) は通信エラーになるようです。USB-C - USBアダプタであれば問題ありません。また，RC-S300はどちらのアダプタでも大丈夫です。
+
 #### SONY PaSoRiのデバイス名について
 
 標準APIの代わりにUSBを使用するため，PaSoRiについては独自のデバイス名を返します。
