@@ -40,3 +40,24 @@ Manage Certificatesをクリックします。
 
 <img width="830" alt="3" src="https://user-images.githubusercontent.com/1725068/148341337-1875360a-1a3c-43cb-befe-d7d11d01bf55.png">
 
+---
+
+[コード署名ツール](https://github.com/miyako/4d-class-build-application)の[`/SignApp`](https://github.com/miyako/4d-class-build-application/blob/main/Project/Sources/Classes/SignApp.4dm)クラスは，キーチェーン内で`"Developer ID Application:@"`に合致する証明書を検索するようになっています。この部分を`"Apple Development:@"`に書き換えましょう。もし，複数のApple IDを使用していれば，さらに条件を絞って検索します。`Apple Development: info-jp@4d.com (2MMJCMYW5G)`に`Apple Development: info-jp@4d.com (2MMJCMYW5G)`のような文字列が返されるはずです。
+
+あとは通常と同じ要領で目標のアプリをコード署名します。
+
+```4d
+$credentials:=New object
+$credentials.username:="info-jp@4d.com"
+$credentials.password:="**************"
+$signApp:=cs.SignApp.new($credentials)
+
+$app:=Folder("Macintosh HD:Applications:4D v19.1:4D.app:"; fk platform path)
+
+$statuses:=$signApp.sign($app)
+$status:=$signApp.archive($app)
+
+If ($status.success)
+	$status:=$signApp.notarize($status.file)
+End if 
+```
