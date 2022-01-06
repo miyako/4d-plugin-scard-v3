@@ -30,8 +30,13 @@
 
 Manage Certificatesをクリックします。
 
+<img width="830" alt="1" src="https://user-images.githubusercontent.com/1725068/148341384-c9077460-1bd3-4294-b7e4-af76148e62e4.png">
+
 左下の追加ボタンをクリックします。
+
+<img width="830" alt="2" src="https://user-images.githubusercontent.com/1725068/148341364-b16fbefc-973f-481a-b46d-0d0024786bc7.png">
 
 唯一，Apple Developmentタイプの証明書だけが作成できます。
 
-* Apple Development
+<img width="830" alt="3" src="https://user-images.githubusercontent.com/1725068/148341337-1875360a-1a3c-43cb-befe-d7d11d01bf55.png">
+
