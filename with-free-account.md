@@ -42,7 +42,7 @@ Manage Certificatesをクリックします。
 
 ---
 
-[コード署名ツール](https://github.com/miyako/4d-class-build-application)の[`/SignApp`](https://github.com/miyako/4d-class-build-application/blob/main/Project/Sources/Classes/SignApp.4dm)クラスは，キーチェーン内で`"Developer ID Application:@"`に合致する証明書を検索するようになっています。この部分を`"Apple Development:@"`に書き換えましょう。もし，複数のApple IDを使用していれば，さらに条件を絞って検索します。`Apple Development: info-jp@4d.com (2MMJCMYW5G)`に`Apple Development: info-jp@4d.com (2MMJCMYW5G)`のような文字列が返されるはずです。
+[コード署名ツール](https://github.com/miyako/4d-class-build-application)の[`SignApp`](https://github.com/miyako/4d-class-build-application/blob/main/Project/Sources/Classes/SignApp.4dm)クラスは，キーチェーン内で`"Developer ID Application:@"`に合致する証明書を検索するようになっています。この部分を`"Apple Development:@"`に書き換えましょう。もし，複数のApple IDを使用していれば，さらに条件を絞って検索します。`Apple Development: info-jp@4d.com (2MMJCMYW5G)`に`Apple Development: info-jp@4d.com (2MMJCMYW5G)`のような文字列が返されるはずです。
 
 あとは通常と同じ要領で目標のアプリをコード署名します。
 
