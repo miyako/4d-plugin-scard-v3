@@ -61,3 +61,23 @@ If ($status.success)
 	$status:=$signApp.notarize($status.file)
 End if 
 ```
+
+署名の成否およびアーカイブされたディスクイメージのパスは`$status`に返されるので，ブレークポイントや`TRACE`で内容を確認できるようにします。
+
+ディスクイメージをマウントし，アプリをインストールします。
+
+GeteKeeperのチェック**拒否**です。つまり，インターネット経由では配布ができません。
+
+```sh
+spctl --assess --type exec -vvvv /Applications/4D\ v19.1/test/4D.app 
+/Applications/4D v19.1/4D.app: rejected
+origin=Apple Development: info-jp@4d.com (2MMJCMYW5G)
+```
+
+コード署名のチェックは**合格**です。
+
+```sh
+codesign --verify --deep --strict --verbose=1  /Applications/4D\ v19.1/4D.app 
+/Applications/4D v19.1/4D.app: valid on disk
+/Applications/4D v19.1/4D.app: satisfies its Designated Requirement
+```
