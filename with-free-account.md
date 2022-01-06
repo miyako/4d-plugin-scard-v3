@@ -26,11 +26,11 @@
 
 無料のApple IDを追加します。
 
-<img width="830" alt="s" src="https://user-images.githubusercontent.com/1725068/148341036-67f71d89-b120-4659-97a3-34256b2d0d23.png">
+<img width="830" alt="1" src="https://user-images.githubusercontent.com/1725068/148341384-c9077460-1bd3-4294-b7e4-af76148e62e4.png">
 
 Manage Certificatesをクリックします。
 
-<img width="830" alt="1" src="https://user-images.githubusercontent.com/1725068/148341384-c9077460-1bd3-4294-b7e4-af76148e62e4.png">
+<img width="830" alt="s" src="https://user-images.githubusercontent.com/1725068/148341036-67f71d89-b120-4659-97a3-34256b2d0d23.png">
 
 左下の追加ボタンをクリックします。
 
