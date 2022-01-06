@@ -27,3 +27,11 @@
 無料のApple IDを追加します。
 
 <img width="830" alt="s" src="https://user-images.githubusercontent.com/1725068/148341036-67f71d89-b120-4659-97a3-34256b2d0d23.png">
+
+Manage Certificatesをクリックします。
+
+左下の追加ボタンをクリックします。
+
+唯一，Apple Developmentタイプの証明書だけが作成できます。
+
+* Apple Development
