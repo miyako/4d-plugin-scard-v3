@@ -66,7 +66,7 @@ End if
 
 ディスクイメージをマウントし，アプリをインストールします。
 
-GeteKeeperのチェック**拒否**です。つまり，インターネット経由では配布ができません。
+GeteKeeperのチェックは**拒否**です。つまり，インターネット経由では配布ができません。
 
 ```sh
 spctl --assess --type exec -vvvv /Applications/4D\ v19.1/test/4D.app 
