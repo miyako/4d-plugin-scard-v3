@@ -1,5 +1,31 @@
-﻿{
+{
 	"editors": [
+		{
+			"type": "method",
+			"id": 2147483634,
+			"previousTabType": "method",
+			"previousTabID": 2147483631,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "TEST_w"
+			}
+		},
+		{
+			"type": "method",
+			"id": 2147483631,
+			"previousTabType": "form",
+			"previousTabID": 219,
+			"codeDescriptor": {
+				"type": 3,
+				"formName": "TEST",
+				"methodPath": "/SOURCES/Forms/TEST/method.4dm"
+			}
+		},
+		{
+			"type": "form",
+			"id": 219,
+			"formName": "TEST"
+		},
 		{
 			"type": "explorer"
 		}

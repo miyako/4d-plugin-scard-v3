@@ -1,12 +1,12 @@
-﻿{
+{
 	"Sources/Methods/TEST_w.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 9,
-		"lastSelectedLine": 9,
+		"firstSelectedLine": 4,
+		"lastSelectedLine": 4,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-11-11T06:30:17.687Z"
+		"stamp": "2022-01-06T06:25:19.727Z"
 	},
 	"Sources/Methods/parse_090f.4dm": {
 		"startSelection": 28,
@@ -43,5 +43,14 @@
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2019-07-02T13:57:13.000Z"
+	},
+	"Sources/Forms/TEST/method.4dm": {
+		"startSelection": 20,
+		"endSelection": 26,
+		"firstSelectedLine": 8,
+		"lastSelectedLine": 8,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2022-01-06T06:25:19.727Z"
 	}
 }
